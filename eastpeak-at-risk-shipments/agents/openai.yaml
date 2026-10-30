@@ -1,0 +1,4 @@
+interface:
+  display_name: "East Peak At-Risk Shipments"
+  short_description: "Triage ShipMonk risk, replacements, and unsent outreach"
+  default_prompt: "Use $eastpeak-at-risk-shipments to resolve the authorized ShipMonk at-risk queue, verify routing or replacements, and save customer drafts for Slack review."

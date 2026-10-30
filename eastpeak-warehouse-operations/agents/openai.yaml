@@ -1,0 +1,4 @@
+interface:
+  display_name: "East Peak Warehouse Operations"
+  short_description: "Coordinate ShipMonk and Pacificomm inventory workflows"
+  default_prompt: "Use $eastpeak-warehouse-operations to prepare an inventory split, receiving order, warehouse shipment, or logistics handoff."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "East Peak International B2B Orders"
+  short_description: "Prepare wholesale shipments, invoices, and reply drafts"
+  default_prompt: "Use $eastpeak-international-b2b-orders to process this customer PO using prior correspondence, shipments, and invoices, respecting my requested draft and fulfillment stopping points."

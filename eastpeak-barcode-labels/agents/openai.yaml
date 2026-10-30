@@ -1,0 +1,4 @@
+interface:
+  display_name: "East Peak Barcode Labels"
+  short_description: "Create Label LIVE labels and verify actual barcode scans"
+  default_prompt: "Use $eastpeak-barcode-labels to create or update my UPC labels, save matching LSC and PDF files, and scan the exported barcode images."
