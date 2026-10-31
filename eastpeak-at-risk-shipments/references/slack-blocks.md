@@ -108,6 +108,8 @@ When the address flag is true and address line 2 is longer than 50 characters, t
 
 A `Guest: Name, ...` line keeps `Guest: Name` as `After`. Any other over-long line is shortened on a word boundary. A displayed `Before` line longer than 300 characters is cut with an ellipsis. The length in the sentence is the full line.
 
+When address line 2 is over 50 characters, the card context line is `Address 2 exceeded limit of 50 characters.` The suggested fix is a separate reply under that order, not a field on the card and not a button. The card omits the street. That reply shows `Before:` and `After:` for the lines that would change. Leave email and phone out of both messages. See [Address line limits](../SKILL.md#address-line-limits).
+
 ## Buttons
 
 | Button | When | Behavior |
