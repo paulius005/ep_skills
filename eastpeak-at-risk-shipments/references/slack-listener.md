@@ -25,11 +25,21 @@ An action input names **one** order message, comes from a person, and is not one
 
 1. A Slack `block_actions` payload whose `channel.id` is `C0CCJJGG6HK`, whose `message.thread_ts` is the day's parent `ts`, and whose `message.ts` is that order message. The clicker is `user.id`. Ignore the click when that id is the bot. A button click is already aimed at East Peak Operations, so it does not need a second @mention in the text.
 2. A message event whose `channel` is `C0CCJJGG6HK` and whose text @mentions East Peak Operations. After the mention is removed, an exact action label below is that shipment action. The same label after `<order message ts>` and one space is that action for the named order message. Any other remaining text is a conversation.
-3. A conversation still needs the @mention. Answer the question, show what they asked to see, or change this skill when they ask for that. Do not run a shipment action unless the words clearly ask for one. If a shipment change names zero orders or more than one, ask which order and do not guess.
+3. A conversation still needs the @mention. Answer the question, show what they asked to see, or change this skill when they ask you to adjust yourself. Do not run a shipment action unless the words clearly ask for one. If a shipment change names zero orders or more than one, ask which order and do not guess. A conversation or a skill change still gets a reply when it names no order.
 
-A channel message or thread reply with no @mention does not map, even when the words are an allowed action. Do not stay silent on a human @mention because the words are not an exact label.
+A channel message or thread reply with no @mention does not map, even when the words are an allowed action. Do not stay silent on a human @mention because the words are not an exact label, or because the message names no order.
 
-If the event names zero order messages, or more than one, record it and stop. Do not pick a shipment. Do not auto-merge orders, shipments, incidents, or Slack messages. Do not fold the reply or the result into the parent. One reply updates at most the one shipment that order message already identified.
+Do not pick a shipment when the message names zero orders or more than one. Do not auto-merge orders, shipments, incidents, or Slack messages. Do not fold the reply or the result into the parent. One shipment change updates at most the one order that message already identified.
+
+## How a conversation is formatted
+
+Post the reply with `post_reply` and blocks from `conversation_blocks`. Do not post a paragraph.
+
+1. Lead: one sentence, rendered bold. It answers the ask.
+2. Bullets: the few facts they need, one per line.
+3. Note: one context line, 75 characters or fewer, for the limit or the next step.
+
+A request to adjust yourself uses that same shape. The lead says the skill was updated. The bullets say what changed. The note names a limit that stayed, or says the shipment was not changed.
 
 ## Return stage
 
@@ -58,7 +68,7 @@ When a person asks what is wrong with an address, or asks how to correct it befo
 
 A reply in this channel that asks to change the skill is skill feedback. It is not one of the action labels above. Do not update the ShipMonk shipment from it, and do not auto-merge orders or shipments because of it.
 
-Update `SKILL.md` and the references so the feedback is part of the skill, then add those files to the repo and commit. Reply in the thread that the skill was updated. Leave the pull request unmerged unless the user asks to merge. Never commit or print the API key. If the feedback would send customer email, use FlavorCloud, skip the halted-reason gates, or charge the customer again, record the reply, say which limit stayed, and leave that part unchanged. A request to answer ordinary questions is not one of those limits.
+Update `SKILL.md` and the references so the feedback is part of the skill, then add those files to the repo and commit. Reply in the thread with `conversation_blocks`: a bold lead, bullets for what changed, and a context note. Leave the pull request unmerged unless the user asks to merge. Never commit or print the API key. If the feedback would send customer email, use FlavorCloud, skip the halted-reason gates, or charge the customer again, record the reply, say which limit stayed, and leave that part unchanged. A request to answer ordinary questions, or to adjust yourself, is not one of those limits. That reply is still sent when the message names no order.
 
 The daily report posts an Address line 2 suggestion as its own reply under the daily parent. That reply is a report, not an action label. Do not map it to a shipment action, and do not edit the address because that reply exists. Changing the address remains outside this listener. The report only suggests the fix, as specified in the skill.
 
@@ -112,7 +122,7 @@ Nested reply, when the client can set `thread_ts` to the order message:
 }
 ```
 
-The message must @mention East Peak Operations. After that mention is removed, an exact label is a shipment action: `USPS Priority`, `guarded clone and submit`, `unsent Gmail draft`, `Draft an email to the customer`, or `Draft address-check email`. Any other text is a conversation. The listener classifies it as `conversation` and does not post a stock acceptance line. Write the reply for that message and post it with `chat.postMessage` as East Peak Operations. A `posted: false` result on a conversation means the stock line was not sent. It does not mean to stay silent.
+The message must @mention East Peak Operations. After that mention is removed, an exact label is a shipment action: `USPS Priority`, `guarded clone and submit`, `unsent Gmail draft`, `Draft an email to the customer`, or `Draft address-check email`. Any other text is a conversation. The listener classifies it as `conversation` and does not post a stock acceptance line. Write the reply with `conversation_blocks` and post it with `post_reply`. A `posted: false` result on a conversation means the stock line was not sent. It does not mean to stay silent.
 
 Same-thread fallback, when the reply can only sit under the daily parent:
 

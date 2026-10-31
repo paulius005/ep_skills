@@ -10,8 +10,8 @@ from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from slack_poster.blocks import plan_messages, report_from_dict  # noqa: E402
-from slack_poster.post import SlackAPIError, UrllibSlackTransport, post_report  # noqa: E402
+from slack_poster.blocks import conversation_blocks, plan_messages, report_from_dict  # noqa: E402
+from slack_poster.post import SlackAPIError, UrllibSlackTransport, post_reply, post_report  # noqa: E402
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
 ROOT = Path(__file__).resolve().parents[1]
@@ -260,6 +260,37 @@ class PayloadTests(unittest.TestCase):
         for hidden in HIDDEN:
             self.assertNotIn(hidden, completed.stdout)
         self.assertEqual(completed.stderr, "")
+
+    def test_conversation_reply_is_a_bold_lead_with_bullets(self):
+        text, blocks = conversation_blocks(
+            "I updated how I reply.",
+            [
+                "A question gets an answer.",
+                "A request to adjust me updates the skill.",
+            ],
+            "The shipment was not changed.",
+        )
+        self.assertEqual(blocks[0]["text"]["text"], "*I updated how I reply.*")
+        self.assertIn("• A question gets an answer.", blocks[1]["text"]["text"])
+        self.assertEqual(blocks[2]["type"], "context")
+        self.assertLessEqual(len(blocks[2]["elements"][0]["text"]), 75)
+        self.assertIn("I updated how I reply.", text)
+
+        calls = []
+
+        def transport(method, body):
+            calls.append((method, body))
+            return {"ok": True, "ts": "1700000003.000500"}
+
+        result = post_reply("1700000000.000100", text, blocks, transport=transport)
+        self.assertTrue(result["posted"])
+        self.assertEqual(result["ts"], "1700000003.000500")
+        method, body = calls[0]
+        self.assertEqual(method, "chat.postMessage")
+        self.assertEqual(body["channel"], "C0CCJJGG6HK")
+        self.assertEqual(body["thread_ts"], "1700000000.000100")
+        self.assertNotIn("username", body)
+        self.assertEqual(body["blocks"], blocks)
 
 
 if __name__ == "__main__":

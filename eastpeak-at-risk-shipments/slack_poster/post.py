@@ -6,7 +6,14 @@ import json
 import os
 import urllib.request
 
-from .blocks import Report, plan_messages, parent_blocks, parent_fallback, slack_permalink
+from .blocks import (
+    CHANNEL_ID,
+    Report,
+    parent_blocks,
+    parent_fallback,
+    plan_messages,
+    slack_permalink,
+)
 
 TOKEN_ENV = "SLACK_BOT_TOKEN"
 SLACK_API = "https://slack.com/api/"
@@ -107,3 +114,28 @@ def post_report(report: Report, *, transport=None, token: str | None = None, dry
         "permalink": permalink,
         "results": results,
     }
+
+
+def post_reply(
+    thread_ts: str,
+    text: str,
+    blocks: list,
+    *,
+    channel_id: str = CHANNEL_ID,
+    transport=None,
+    token: str | None = None,
+) -> dict:
+    """Post one thread reply as East Peak Operations. Do not set a username."""
+    if channel_id != CHANNEL_ID:
+        raise ValueError(f"channel_id must be {CHANNEL_ID}")
+    if not thread_ts:
+        raise ValueError("thread_ts is required")
+    if transport is None:
+        secret = token if token is not None else os.environ.get(TOKEN_ENV)
+        if not secret:
+            raise RuntimeError(f"{TOKEN_ENV} is not set")
+        transport = UrllibSlackTransport(secret)
+    posted = transport("chat.postMessage", _message_body(
+        channel_id, text, blocks, thread_ts=thread_ts,
+    ))
+    return {"ok": True, "posted": True, "ts": posted.get("ts")}
