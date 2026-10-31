@@ -125,13 +125,15 @@ On every daily report, inspect `ship_to.street2` for each order whose `actions_r
 
 Keep the street, email, and phone off the order card and off the follow-up. After the order card, post one separate reply in that order's thread. If the client cannot nest under the order message, post it under the daily parent and put the order number on the first line. Do not fold it into the parent or the card. On a later run the same day, update that follow-up instead of posting another. Do not write the address back to ShipMonk. The suggestion is not approval to change it.
 
-State the field, the current length, the 50-character limit, and the smallest edit that fits. Prefer removing a leading guest or attention clause that only repeats the recipient name, when the remainder is 50 characters or fewer and the cut is not in the middle of a word. Do not recommend dropping a unit or street number to make the line fit. If another live validation message names a different field, report that field and its length the same way. Do not invent a character limit that was not verified.
+State the field, the current length, the 50-character limit, and the smallest edit that fits. When line 2 is `Guest:` plus the recipient name and then a stay sentence, keep `Guest:` and the name and remove the stay sentence. Do not drop the guest name to keep the dates. Do not recommend a cut in the middle of a word, and do not drop a unit or street number. If another live validation message names a different field, report that field and its length the same way. Do not invent a character limit that was not verified.
+
+On 2026-10-31 the owner approved that fix for order 8376 and said to submit it. The update set line 2 to `Guest:` plus the recipient name (18 characters). The address flag cleared. `POST /v1/integrations/submit-order` returned HTTP 200, and the readback processing status was `queued_to_submit`.
 
 Order 8376 follow-up:
 
 ```
 Order 8376. Address 2 is 61 characters. The limit is 50.
-Suggested fix: remove the leading "Guest:" clause and the recipient name. The name is already on the order. Keep the remaining clause, which is 41 characters.
+Suggested fix: keep "Guest:" and the recipient name. Remove the stay dates.
 Do not change the address until this is approved.
 ```
 
