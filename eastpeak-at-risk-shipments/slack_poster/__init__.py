@@ -8,7 +8,7 @@ from .blocks import (
     plan_messages,
     report_from_dict,
 )
-from .post import TOKEN_ENV, post_report, post_thread_reply
+from .post import TOKEN_ENV, post_reply, post_report, post_thread_reply
 
 __all__ = [
     "Report",
@@ -17,6 +17,7 @@ __all__ = [
     "conversation_blocks",
     "conversation_fallback",
     "plan_messages",
+    "post_reply",
     "post_report",
     "post_thread_reply",
     "report_from_dict",

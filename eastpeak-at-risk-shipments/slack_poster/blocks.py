@@ -216,30 +216,37 @@ def _clean_bullet(bullet: str) -> str:
     return text
 
 
-def conversation_blocks(lead: str, bullets: list[str], note: str) -> list[dict]:
-    """One bold lead, a short bullet list, and a context note of at most 75 characters."""
-    sentence = " ".join((lead or "").split())
+def conversation_blocks(
+    lead: str,
+    lines: list[str] | None = None,
+    note: str | None = None,
+) -> tuple[str, list]:
+    """Bold lead, bullet lines, and a context note of at most 75 characters.
+
+    Returns the plain-text fallback and the Block Kit blocks. A bullet may
+    keep line breaks so a quoted draft stays readable. This function does not post.
+    """
+    sentence = " ".join((lead or "").replace("*", "").split())
     if not sentence or "\n" in (lead or ""):
         raise ValueError("lead must be one sentence")
-    if sentence.startswith("*") and sentence.endswith("*") and len(sentence) > 2:
-        bold = sentence
-    else:
-        bold = f"*{sentence}*"
-    if not bullets:
+    if not lines:
         raise ValueError("conversation needs at least one bullet")
-    lines = "\n".join(f"• {_clean_bullet(item)}" for item in bullets)
-    return [_section(bold), _section(lines), _context(note)]
+    cleaned = [_clean_bullet(line) for line in lines]
+    blocks = [
+        _section(f"*{sentence}*"),
+        _section("\n".join(f"• {item}" for item in cleaned)),
+    ]
+    if not note:
+        raise ValueError("note is required")
+    note = " ".join(note.split())
+    blocks.append(_context(note))
+    text = "\n".join([sentence, *cleaned, note])
+    return text, blocks
 
 
-def conversation_fallback(lead: str, bullets: list[str], note: str) -> str:
-    blocks = conversation_blocks(lead, bullets, note)
-    parts = []
-    for block in blocks:
-        if block["type"] == "section":
-            parts.append(block["text"]["text"].replace("*", ""))
-        elif block["type"] == "context":
-            parts.append(block["elements"][0]["text"])
-    return "\n".join(parts)
+def conversation_fallback(lead: str, lines: list[str], note: str) -> str:
+    text, _blocks = conversation_blocks(lead, lines, note)
+    return text
 
 
 def _scrub(text: str, shipment: Shipment) -> str:

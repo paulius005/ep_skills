@@ -328,7 +328,7 @@ class ButtonVisibilityTests(unittest.TestCase):
 
 class ConversationTests(unittest.TestCase):
     def test_conversation_is_a_bold_lead_bullets_and_a_short_note(self):
-        blocks = conversation_blocks(
+        _text, blocks = conversation_blocks(
             "The unsent draft for order 8257 is ready for review.",
             ["Subject: shipping issue with order: #8257", "Not sent."],
             "The draft email is in your inbox.",

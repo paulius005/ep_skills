@@ -1,9 +1,10 @@
 """Map a Slack reply to one skill action, and never answer the bot.
 
 East Peak Operations posts the daily parent and the order cards. Those posts
-are not human actions. A human reply counts only when it @mentions that same
-app and names an allowed action. Replies, when sent, use SLACK_BOT_TOKEN.
-This module does not call ShipMonk and does not print the token.
+are not human actions. A human @mention is either an exact shipment action or
+a conversation. Conversations are classified and not given a stock reply.
+Replies, when sent, use SLACK_BOT_TOKEN. This module does not call ShipMonk
+and does not print the token.
 """
 
 from __future__ import annotations
@@ -12,7 +13,7 @@ import json
 import os
 import re
 
-from slack_poster.post import TOKEN_ENV, UrllibSlackTransport
+from slack_poster.post import TOKEN_ENV, UrllibSlackTransport, post_thread_reply
 
 BOT_APP_NAME = "East Peak Operations"
 CHANNEL_ID = "C0CCJJGG6HK"
@@ -56,13 +57,7 @@ def classify(event: dict, bot_user_id: str | None = None) -> dict:
         return _decision(reason="no_mention")
     mapped = _map_label(message.get("text") or "", message.get("thread_ts"))
     if mapped is None:
-        # A human @mention that is not a fixed label still needs a reply.
-        # The stock listener does not post it. action stays empty so a
-        # later post=True call cannot send the fixed "Accepted …" line.
-        return _decision(
-            reason="conversation",
-            thread_ts=str(message["thread_ts"]) if message.get("thread_ts") else None,
-        )
+        return _conversation(message)
     action, label, order_ts = mapped
     return _decision(
         action=action,
@@ -93,14 +88,22 @@ def listen(
     decision = classify(event, bot_user_id=bot_user_id)
     result = dict(decision)
     result["posted"] = False
-    if not post or not decision["action"]:
+    # A conversation is answered with conversation_blocks, not this stock line.
+    # A missing @mention, a bot post, and a parent card have no action.
+    if (
+        not post
+        or not decision["action"]
+        or decision["action"] == "conversation"
+        or not decision.get("thread_ts")
+    ):
         return result
-    if transport is None:
-        if not secret:
-            raise RuntimeError(f"{TOKEN_ENV} is not set")
-        transport = UrllibSlackTransport(secret)
-    body = _reply_body(decision)
-    posted = transport("chat.postMessage", body)
+    posted = post_thread_reply(
+        channel_id=CHANNEL_ID,
+        thread_ts=str(decision["thread_ts"]),
+        text=_reply_text(decision),
+        transport=transport,
+        token=secret,
+    )
     result["posted"] = True
     result["ts"] = posted.get("ts")
     return result
@@ -114,18 +117,12 @@ def _bot_user_id(transport) -> str:
     return str(user_id)
 
 
-def _reply_body(decision: dict) -> dict:
+def _reply_text(decision: dict) -> str:
     label = decision["label"] or decision["action"]
-    return {
-        "channel": CHANNEL_ID,
-        "thread_ts": decision["thread_ts"],
-        "text": (
-            f"Accepted {label} from a human @mention. "
-            "The decision tree runs before any shipment change."
-        ),
-        "unfurl_links": False,
-        "unfurl_media": False,
-    }
+    return (
+        f"Accepted {label} from a human @mention. "
+        "The decision tree runs before any shipment change."
+    )
 
 
 def _unwrap(event: dict) -> dict:
@@ -224,6 +221,21 @@ def _iter_mentions(value):
     if isinstance(value, list):
         for item in value:
             yield from _iter_mentions(item)
+
+
+def _conversation(message: dict) -> dict:
+    cleaned = " ".join(MENTION_RE.sub(" ", message.get("text") or "").split())
+    if not cleaned:
+        return _decision(reason="not_an_action")
+    thread_ts = message.get("thread_ts")
+    thread_ts = str(thread_ts) if thread_ts else None
+    return _decision(
+        action="conversation",
+        label=cleaned,
+        order_ts=thread_ts,
+        thread_ts=thread_ts,
+        reason="conversation",
+    )
 
 
 def _map_label(text: str, thread_ts: str | None):

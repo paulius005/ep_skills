@@ -10,11 +10,11 @@ from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from slack_poster.blocks import plan_messages, report_from_dict  # noqa: E402
-from slack_poster.blocks import conversation_blocks, conversation_fallback  # noqa: E402
+from slack_poster.blocks import conversation_blocks, plan_messages, report_from_dict  # noqa: E402
 from slack_poster.post import (  # noqa: E402
     SlackAPIError,
     UrllibSlackTransport,
+    post_reply,
     post_report,
     post_thread_reply,
 )
@@ -268,7 +268,7 @@ class PayloadTests(unittest.TestCase):
         self.assertEqual(completed.stderr, "")
 
     def test_thread_reply_passes_blocks_and_sets_no_username(self):
-        blocks = conversation_blocks(
+        text, blocks = conversation_blocks(
             "The unsent draft for order 8257 is ready for review.",
             ["Not sent."],
             "The draft email is in your inbox.",
@@ -277,22 +277,17 @@ class PayloadTests(unittest.TestCase):
         result = post_thread_reply(
             channel_id="C0CCJJGG6HK",
             thread_ts="1700000000.000100",
-            text=conversation_fallback(
-                "The unsent draft for order 8257 is ready for review.",
-                ["Not sent."],
-                "The draft email is in your inbox.",
-            ),
+            text=text,
             blocks=blocks,
             transport=transport,
         )
-        self.assertTrue(result["ok"])
+        self.assertEqual(result["ts"], "1700000000.0001")
         method, body = transport.calls[0]
         self.assertEqual(method, "chat.postMessage")
         self.assertEqual(body["channel"], "C0CCJJGG6HK")
         self.assertEqual(body["thread_ts"], "1700000000.000100")
         self.assertEqual(body["blocks"], blocks)
         self.assertNotIn("username", body)
-        self.assertNotIn("icon_emoji", body)
         with self.assertRaises(RuntimeError):
             post_thread_reply(
                 channel_id="C0OTHER",
@@ -301,6 +296,37 @@ class PayloadTests(unittest.TestCase):
                 blocks=blocks,
                 transport=transport,
             )
+
+    def test_conversation_reply_is_a_bold_lead_with_bullets(self):
+        text, blocks = conversation_blocks(
+            "I updated how I reply.",
+            [
+                "A question gets an answer.",
+                "A request to adjust me updates the skill.",
+            ],
+            "The shipment was not changed.",
+        )
+        self.assertEqual(blocks[0]["text"]["text"], "*I updated how I reply.*")
+        self.assertIn("• A question gets an answer.", blocks[1]["text"]["text"])
+        self.assertEqual(blocks[2]["type"], "context")
+        self.assertLessEqual(len(blocks[2]["elements"][0]["text"]), 75)
+        self.assertIn("I updated how I reply.", text)
+
+        calls = []
+
+        def transport(method, body):
+            calls.append((method, body))
+            return {"ok": True, "ts": "1700000003.000500"}
+
+        result = post_reply("1700000000.000100", text, blocks, transport=transport)
+        self.assertTrue(result["posted"])
+        self.assertEqual(result["ts"], "1700000003.000500")
+        method, body = calls[0]
+        self.assertEqual(method, "chat.postMessage")
+        self.assertEqual(body["channel"], "C0CCJJGG6HK")
+        self.assertEqual(body["thread_ts"], "1700000000.000100")
+        self.assertNotIn("username", body)
+        self.assertEqual(body["blocks"], blocks)
 
 
 if __name__ == "__main__":

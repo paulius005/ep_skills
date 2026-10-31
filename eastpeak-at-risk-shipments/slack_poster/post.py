@@ -9,9 +9,9 @@ import urllib.request
 from .blocks import (
     CHANNEL_ID,
     Report,
-    plan_messages,
     parent_blocks,
     parent_fallback,
+    plan_messages,
     slack_permalink,
 )
 
@@ -49,6 +49,43 @@ class UrllibSlackTransport:
         if not payload.get("ok"):
             raise SlackAPIError(method, str(payload.get("error") or "unknown"))
         return payload
+
+
+def post_thread_reply(
+    *,
+    channel_id: str,
+    thread_ts: str,
+    text: str,
+    blocks: list | None = None,
+    transport=None,
+    token: str | None = None,
+) -> dict:
+    """Post one thread reply with chat.postMessage as East Peak Operations.
+
+    The token is read from SLACK_BOT_TOKEN when `transport` is omitted. It is
+    sent only on the Authorization header. The body has no username override,
+    so Slack shows the app that owns the token. Pass `blocks` for a formatted
+    conversation reply. Omit them for a plain shipment-action acknowledgement.
+    """
+    if channel_id != CHANNEL_ID:
+        raise RuntimeError("wrong channel")
+    if not thread_ts:
+        raise RuntimeError("thread_ts is required")
+    if transport is None:
+        secret = token if token is not None else os.environ.get(TOKEN_ENV)
+        if not secret:
+            raise RuntimeError(f"{TOKEN_ENV} is not set")
+        transport = UrllibSlackTransport(secret)
+    body = {
+        "channel": channel_id,
+        "thread_ts": thread_ts,
+        "text": text,
+        "unfurl_links": False,
+        "unfurl_media": False,
+    }
+    if blocks:
+        body["blocks"] = blocks
+    return transport("chat.postMessage", body)
 
 
 def _message_body(channel_id: str, text: str, blocks: list, thread_ts: str | None = None) -> dict:
@@ -116,34 +153,24 @@ def post_report(report: Report, *, transport=None, token: str | None = None, dry
     }
 
 
-def post_thread_reply(
-    *,
-    channel_id: str,
+def post_reply(
     thread_ts: str,
     text: str,
     blocks: list,
+    *,
+    channel_id: str = CHANNEL_ID,
     transport=None,
     token: str | None = None,
 ) -> dict:
-    """Post one thread reply as East Peak Operations. Never sets a username."""
+    """Post a formatted thread reply. Same app and token as post_thread_reply."""
     if channel_id != CHANNEL_ID:
-        raise RuntimeError("wrong channel")
-    if not thread_ts:
-        raise RuntimeError("thread_ts is required")
-    if not blocks:
-        raise RuntimeError("blocks are required")
-    body = _message_body(channel_id, text, blocks, thread_ts=thread_ts)
-    if "username" in body or "icon_emoji" in body or "icon_url" in body:
-        raise RuntimeError("refusing to set a username")
-    if transport is None:
-        secret = token if token is not None else os.environ.get(TOKEN_ENV)
-        if not secret:
-            raise RuntimeError(f"{TOKEN_ENV} is not set")
-        transport = UrllibSlackTransport(secret)
-    posted = transport("chat.postMessage", body)
-    return {
-        "ok": True,
-        "channel": channel_id,
-        "thread_ts": thread_ts,
-        "ts": posted.get("ts"),
-    }
+        raise ValueError(f"channel_id must be {CHANNEL_ID}")
+    posted = post_thread_reply(
+        channel_id=channel_id,
+        thread_ts=thread_ts,
+        text=text,
+        blocks=blocks,
+        transport=transport,
+        token=token,
+    )
+    return {"ok": True, "posted": True, "ts": posted.get("ts")}
