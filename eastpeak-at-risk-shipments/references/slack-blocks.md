@@ -66,6 +66,8 @@ Plain words, not raw status keys. Omit a field object when it does not apply. A 
 
 Add a *Draft* field, "DRAFT ONLY / unsent", only after a draft is saved. Do not say one was saved because the button is on the card.
 
+When address line 2 is over 50 characters, the card context line is `Address 2 exceeded limit of 50 characters.` The suggested fix is a separate reply under that order, not a field on the card and not a button. Leave the street, email, and phone out of both messages. See [Address line limits](../SKILL.md#address-line-limits).
+
 ## Buttons
 
 | Button | When | Behavior |
