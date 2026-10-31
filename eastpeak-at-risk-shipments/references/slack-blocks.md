@@ -80,16 +80,18 @@ Put at most those buttons in `actions.elements`. Slack allows five. Do not inclu
 
 ## Markdown fallback
 
-Use this only when the sender cannot post `blocks`. Same facts, no fake buttons.
+Use this only when the sender cannot post `blocks`. `send_slack_message` is that sender. It parses Markdown, so labels need double asterisks. `**Status:**` arrives bold. `*Status:*` arrives italic. Same facts, no fake buttons. Put an action that would have been a button on the context line.
+
+Block Kit `mrkdwn` in the JSON above keeps a single asterisk. Copy those single asterisks only into a `blocks` payload or a raw Slack `text` field, not into `send_slack_message`.
 
 ```
-*Order #8257*
-*Status:* Fulfilled
-*Processing:* En route
-*Return:* Returned · received Oct 21
-*Action required:* At risk
-*Ship to:* Hawaii
-*Service:* USPS Priority Mail
-Already en route. Service left unchanged.
+**Order #8257**
+**Status:** Fulfilled
+**Processing:** En route
+**Return:** Returned · received Oct 21
+**Action required:** At risk
+**Ship to:** Hawaii
+**Service:** USPS Priority Mail
+Suggestion: Draft address-check email. Already en route. Service left unchanged.
 <https://app.shipmonk.com/orders/lookup/19002/18927830040707|View order in ShipMonk>
 ```

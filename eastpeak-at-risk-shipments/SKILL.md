@@ -91,7 +91,9 @@ Every card includes order number, order status, processing status, every true `a
 
 Write status words like "Fulfilled" and "En route", not raw keys. The context line states what was done or the one suggested next step. Do not add a boilerplate footer such as "no shipment change in this run."
 
-When the sender accepts only markdown, use the same fields in the same order, one labeled line each, and make the order link the words "View order in ShipMonk". Do not invent a button that is not in the payload.
+When the sender accepts only markdown, as `send_slack_message` does, use the same fields in the same order, one labeled line each, and make the order link the words "View order in ShipMonk". That sender parses Markdown: write `**Order #8257**` and `**Status:**` so the labels are bold. A single asterisk is italic there. Do not invent a button that is not in the payload.
+
+Block Kit `mrkdwn`, including the JSON in the blocks reference, still uses a single asterisk for bold: `*Order #8257*` and `*Status:*`. Use that form only in a `blocks` payload or a raw Slack `text` field.
 
 **Built-in action.** If a built-in action applies, put that control in the reply and do not replace it with a different suggestion. The controls and their gates are in [the Slack listener reference](references/slack-listener.md).
 
@@ -119,18 +121,18 @@ A **View order in ShipMonk** button is a URL button and does not need a click ha
 
 If several flags are true, list all of them under Action required and use the blocking one for the context line or action button. If the order is not editable, do not suggest changing the address, the service, or the items.
 
-The 8257 card below is the shape. Its Draft address-check button is the control, not a claim that a draft was saved. Full JSON is in the blocks reference.
+The 8257 card below is the `send_slack_message` shape. Double asterisks are required there. The Draft address-check words on the context line name the control. They are not a button and not a claim that a draft was saved. Full Block Kit JSON, which keeps single-asterisk `mrkdwn`, is in the blocks reference.
 
 ```
-*Order #8257*
-*Status:* Fulfilled
-*Processing:* En route
-*Return:* Returned · received Oct 21
-*Action required:* At risk
-*Ship to:* Hawaii
-*Service:* USPS Priority Mail
-Already en route. Service left unchanged.
-[Draft address-check email] [View order in ShipMonk]
+**Order #8257**
+**Status:** Fulfilled
+**Processing:** En route
+**Return:** Returned · received Oct 21
+**Action required:** At risk
+**Ship to:** Hawaii
+**Service:** USPS Priority Mail
+Suggestion: Draft address-check email. Already en route. Service left unchanged.
+<https://app.shipmonk.com/orders/lookup/19002/18927830040707|View order in ShipMonk>
 ```
 
 ## Verification, completion and restrictions
