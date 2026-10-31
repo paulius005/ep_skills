@@ -2,7 +2,9 @@
 
 import json
 import os
+import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -319,6 +321,43 @@ class ListenerTests(unittest.TestCase):
 
         payload["user"] = {"id": BOT_USER, "name": BOT_APP_NAME}
         self.assertEqual(classify(payload, bot_user_id=BOT_USER)["reason"], "bot")
+
+    def test_cli_no_post_does_not_send_a_stock_line(self):
+        event = {
+            "type": "message",
+            "channel": "C0CCJJGG6HK",
+            "user": HUMAN,
+            "ts": "1700000000.000300",
+            "thread_ts": PARENT_TS,
+            "text": f"<@{BOT_USER}|{BOT_APP_NAME}> please show the wording",
+        }
+        with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8") as handle:
+            json.dump(event, handle)
+            event_path = handle.name
+        env = os.environ.copy()
+        env.pop("SLACK_BOT_TOKEN", None)
+        env.pop("SHIPMONK_API_KEY", None)
+        env["PYTHONPATH"] = str(Path(__file__).resolve().parents[1])
+        completed = subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "slack_listener",
+                "--event",
+                str(event_path),
+                "--no-post",
+            ],
+            cwd=Path(__file__).resolve().parents[1],
+            env=env,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        result = json.loads(completed.stdout)
+        self.assertFalse(result["posted"])
+        self.assertIsNone(result["action"])
+        self.assertEqual(result["reason"], "not_an_action")
+        self.assertEqual(completed.stderr, "")
 
 
 if __name__ == "__main__":

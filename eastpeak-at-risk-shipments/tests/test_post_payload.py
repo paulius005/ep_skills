@@ -11,7 +11,13 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from slack_poster.blocks import plan_messages, report_from_dict  # noqa: E402
-from slack_poster.post import SlackAPIError, UrllibSlackTransport, post_report  # noqa: E402
+from slack_poster.blocks import conversation_blocks, conversation_fallback  # noqa: E402
+from slack_poster.post import (  # noqa: E402
+    SlackAPIError,
+    UrllibSlackTransport,
+    post_report,
+    post_thread_reply,
+)
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
 ROOT = Path(__file__).resolve().parents[1]
@@ -260,6 +266,41 @@ class PayloadTests(unittest.TestCase):
         for hidden in HIDDEN:
             self.assertNotIn(hidden, completed.stdout)
         self.assertEqual(completed.stderr, "")
+
+    def test_thread_reply_passes_blocks_and_sets_no_username(self):
+        blocks = conversation_blocks(
+            "The unsent draft for order 8257 is ready for review.",
+            ["Not sent."],
+            "The draft email is in your inbox.",
+        )
+        transport = RecordingTransport()
+        result = post_thread_reply(
+            channel_id="C0CCJJGG6HK",
+            thread_ts="1700000000.000100",
+            text=conversation_fallback(
+                "The unsent draft for order 8257 is ready for review.",
+                ["Not sent."],
+                "The draft email is in your inbox.",
+            ),
+            blocks=blocks,
+            transport=transport,
+        )
+        self.assertTrue(result["ok"])
+        method, body = transport.calls[0]
+        self.assertEqual(method, "chat.postMessage")
+        self.assertEqual(body["channel"], "C0CCJJGG6HK")
+        self.assertEqual(body["thread_ts"], "1700000000.000100")
+        self.assertEqual(body["blocks"], blocks)
+        self.assertNotIn("username", body)
+        self.assertNotIn("icon_emoji", body)
+        with self.assertRaises(RuntimeError):
+            post_thread_reply(
+                channel_id="C0OTHER",
+                thread_ts="1700000000.000100",
+                text="No.",
+                blocks=blocks,
+                transport=transport,
+            )
 
 
 if __name__ == "__main__":

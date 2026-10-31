@@ -138,14 +138,14 @@ On `draft_address_check` only:
 1. Re-read the return. If the status is no longer exactly `returned`, stop and say so. Do not draft from a stale button.
 2. Re-read the order. The recipient is `customer_email` when the ship-to email is empty. If both are present and differ, or neither is present, stop and ask which address to use. Never guess.
 3. The From account must be `hello@runeastpeak.com`. If that mailbox is not the one available, stop. Do not draft from another account.
-4. Search for an existing unsent draft for this order whose subject is the subject below. Update that draft in place. If a matching message was already sent, stop and report it. Do not send another.
+4. Search hello@runeastpeak.com for an existing unsent draft for this order. Match the subject below, and also the previous subject `Can you double-check the address for order {order_number}?`. Update that draft in place, including when the subject changes. Do not save a second copy. If a matching message was already sent, stop and report it. Do not send another.
 5. Save **DRAFT ONLY — NEVER SEND**. Read back the draft id, From, To, subject, body, and unsent state.
-6. Reply on that order message: `The draft email is in your inbox.` Include the draft link when one exists. Do not include the address, email, or phone. Do not say the draft was sent.
+6. Reply on that order message: `The draft email is in your inbox.` Include the draft link when one exists. Do not include the address, email, or phone on that order card. Do not say the draft was sent. When a person asks to see the draft, quote the saved unsent subject and body in the thread and say it was not sent.
 
-Subject:
+Subject, only for a returned order:
 
 ```
-Can you double-check the address for order {order_number}?
+shipping issue with order: #{order_number}
 ```
 
 Body:
@@ -153,20 +153,31 @@ Body:
 ```
 Hi {first_name},
 
-Your East Peak order {order_number} came back to us on {returned_date}. Before we send it again, can you double-check the shipping address?
+Your East Peak order {order_number} was returned to sender on {returned_date}. We have the package, and we haven't shipped it again.
+
+The address on the label is:
 
 {street1}
 {street2 line only when present}
 {city}, {state} {zip}
 
-If that's right, reply and let us know. If it isn't, reply with the corrected address.
-
-We haven't reshipped it.
+Would you look it over when you have a minute? Reply if we should send it there. If you'd like a different address on the label, reply with that address and we'll update it before we ship.
 
 Thanks,
 East Peak
 ```
 
 Use the first name from the verified recipient. If it cannot be split safely, open with "Hi there,". `{returned_date}` is the return's received date in `America/Los_Angeles`, written as a calendar date. The address lines are the order's current ship-to, copied exactly. Do not claim the address failed validation, and do not invent a carrier reason. The known return reason may be unknown.
+
+Say `was returned to sender`. Do not say `came back to us`. Do not use `If that's right, reply and let us know. If it isn't, reply with the corrected address.`
+
+### Voice
+
+No language guide named Thor is in this repo or in hello@runeastpeak.com. Write the returned-order draft in the short voice of sent mail from that mailbox, and in the usual support standard: fact first, specific, human, one next step.
+
+- First name, contractions, and short sentences.
+- Name the order, the return date, and that we have not shipped it again.
+- Ask them to look the address over. A reply that it is right is enough, and then we send it again. If a line should change, they reply with the address they want.
+- Sign `Thanks,` then `East Peak`. Do not sign as a teammate.
 
 A saved draft is waiting for a person to review it. It does not reship the order and it does not clear the alert.

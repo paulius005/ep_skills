@@ -208,6 +208,40 @@ def _context(text: str) -> dict:
     return {"type": "context", "elements": [{"type": "mrkdwn", "text": text}]}
 
 
+def _clean_bullet(bullet: str) -> str:
+    lines = [" ".join(line.split()) for line in str(bullet).splitlines()]
+    text = "\n".join(lines).strip()
+    if not text:
+        raise ValueError("bullet must not be empty")
+    return text
+
+
+def conversation_blocks(lead: str, bullets: list[str], note: str) -> list[dict]:
+    """One bold lead, a short bullet list, and a context note of at most 75 characters."""
+    sentence = " ".join((lead or "").split())
+    if not sentence or "\n" in (lead or ""):
+        raise ValueError("lead must be one sentence")
+    if sentence.startswith("*") and sentence.endswith("*") and len(sentence) > 2:
+        bold = sentence
+    else:
+        bold = f"*{sentence}*"
+    if not bullets:
+        raise ValueError("conversation needs at least one bullet")
+    lines = "\n".join(f"• {_clean_bullet(item)}" for item in bullets)
+    return [_section(bold), _section(lines), _context(note)]
+
+
+def conversation_fallback(lead: str, bullets: list[str], note: str) -> str:
+    blocks = conversation_blocks(lead, bullets, note)
+    parts = []
+    for block in blocks:
+        if block["type"] == "section":
+            parts.append(block["text"]["text"].replace("*", ""))
+        elif block["type"] == "context":
+            parts.append(block["elements"][0]["text"])
+    return "\n".join(parts)
+
+
 def _scrub(text: str, shipment: Shipment) -> str:
     for hidden in (shipment.email, shipment.phone, shipment.street1):
         if hidden and hidden in text:
