@@ -23,6 +23,8 @@ Before any mutation, read [the incident record and rerun contract](references/in
 
 Hawaii/Alaska means verified US destination state HI/AK (or its unambiguous full name), not a substring of a city or free-text note. Preserve the intended recipient, address, products, and quantities throughout. Selecting USPS Priority alone is not permission to release an otherwise held shipment.
 
+Do not treat `processing_status` as the shipment stage when the order lists any `returns[].rma`. For each RMA, read `GET /v1/integrations/returns-list?rma={rma}`. The return's `status` is the stage. Exact status `returned` means the shipment was returned, even when `processing_status` is still `en_route`. The built-in action is then the address-check draft button in [the Slack listener reference](references/slack-listener.md). Do not offer USPS Priority, and do not describe the shipment as rerouted. The button creates a Gmail draft from `hello@runeastpeak.com` and never sends it.
+
 Do not use FlavorCloud. It is not an East Peak option for this skill: do not select it, do not offer it as a button, and do not substitute it when USPS Priority is unavailable or eligibility is unclear.
 
 ### Exact halted reason: guarded clone and submit
@@ -53,7 +55,7 @@ This reporting rule applies to **every branch and every attempted or taken opera
 1. Verify the **East Peak workspace** and channel **C0CCJJGG6HK** at [the configured channel](https://east-peak-workspace.slack.com/archives/C0CCJJGG6HK). Stop posting if workspace/channel identity differs. Use the explicitly configured reporting timezone **`America/Los_Angeles` (Pacific)** for this user unless the user changes it. Compute the actual Pacific calendar date at run time in that timezone, including daylight-saving changes, and persist the timezone and date; do not use a hardcoded example date or silently switch day boundaries between workers or runs.
 2. Before creating a parent, consult the durable daily-thread record and search the channel for the day's existing parent. Verify its channel, date and parent message, then reuse it. One parent per Pacific day. On a rerun the same day, reuse that same parent. If multiple candidate parents exist, reconcile rather than adding another. If none exists, claim the daily key atomically, recheck, and create exactly one parent whose entire root text is **`At Risk Shipments [Date] 🧵`**, replacing `[Date]` with that Pacific calendar date in `YYYY-MM-DD`. The parent has no order list and no shipment detail. An uncertain parent creation requires readback/search before retrying.
 3. Persist and read back the verified workspace ID, channel ID, reporting date/timezone, parent message timestamp/`thread_ts` and real permalink. Post one reply per Action Required order under that parent. The parent text stays `At Risk Shipments [Date] 🧵`; the orders in the thread are the Action Required alert. The daily record is shared across incidents and workers. An existing incident from a prior day uses today's parent for new actions, with references to prior entries when useful. On rerun, reuse the shipment's existing order message for that day instead of posting a second one.
-4. Each order message identifies the order link, order/shipment/incident and stable action reference; exact reason; attempted/taken action; before/after or verified result; precise verified, blocked, denied, failed or uncertain status; draft reference/link explicitly labeled **DRAFT ONLY / unsent**, or the reason no draft exists; and decisions/approvals and next step. For a verified HI/AK shipment that is still editable, include the USPS Priority button from the listener contract. Never represent a Gmail draft as sent, a timeout as failure or success without evidence, or a proposed action as completed. Include failed attempts and uncertain outcomes even when no mutation can be verified. Omit secrets and unnecessary customer data. Keep full address, email, and phone out of the message.
+4. Write each order message with [How to write each reply](#how-to-write-each-reply) and the Block Kit in [the Slack blocks reference](references/slack-blocks.md). Keep the order link, order number, order status, processing status, action required, destination, and service. Also include the exact reason, attempted or taken action, verified result or the blocked, denied, failed, or uncertain outcome, and any unsent draft labeled **DRAFT ONLY / unsent**. For a verified editable HI/AK shipment, include the USPS Priority button. For return status exactly `returned`, include the address-check draft button instead. Never represent a Gmail draft as sent, a timeout as failure or success without evidence, or a proposed action as completed. Include failed attempts and uncertain outcomes even when no mutation can be verified. Omit secrets and unnecessary customer data. Keep full address, email, and phone out of the message.
 5. Deduplicate reporting by stable incident/action/attempt reference and its persisted reply ID. On rerun, read back the existing order message and update it only for a changed outcome instead of appending a duplicate shipment message; retain the earlier failure/uncertainty history when reconciling. A distinct authorized retry gets its own attempt reference and its own reply tied to that order message, still under the same daily parent. Read back each Slack create/update and persist its channel, parent and reply identifiers/permalink. If reporting times out, reconcile before retrying. If Slack reporting is blocked or uncertain, record the pending report and exact blocker in the ledger and completion handoff; never claim it was posted or recursively try to report a reporting failure. Reconcile pending reports into their recorded daily parent when access returns.
 
 ## Slack listener
@@ -65,6 +67,7 @@ A reply maps to an existing action only:
 - Button `usps_priority`, or reply text **`USPS Priority`**: the existing Hawaii/Alaska option. Offer that button only when the verified destination is HI/AK and the shipment is still editable. This skill defines no other HI/AK service option, so the message has no other service button. FlavorCloud is not a button. If this reply arrives and the exact halted reason also applies, the button does not submit by itself: set USPS Priority on the eligible replacement, and clone and submit only after the duplicate, original, and cost gates. If the reason is anything else and the shipment is still editable, set USPS Priority, verify it, then continue the unsent-draft branch. If the shipment is not editable, or Priority cannot be verified, flag that exception and do not change service.
 - Reply text **`guarded clone and submit`**: the replacement branch, and only when the exact live reason is `halted awaiting carrier processing`. Clone and submit only after the duplicate, original, and cost gates. For HI/AK, set USPS Priority on the eligible replacement before submission. Do not create a customer draft for a successful halted replacement unless separately requested.
 - Reply text **`unsent Gmail draft`**: the draft branch for every reason other than that exact halted reason. If the destination is verified HI/AK and the shipment is still editable, select and verify USPS Priority first, then save the draft. **DRAFT ONLY — NEVER SEND.**
+- Button `draft_address_check`, or reply text **`Draft address-check email`**: only when the return status is exactly `returned`. Save the unsent address-check draft from `hello@runeastpeak.com` defined in the listener contract. Do not send it, and do not change the shipping service.
 
 Any other reply maps to no shipment action. Record it on that order message and do not update the shipment, unless it is skill feedback as defined below. Do not invent a shipment action from free text. Do not auto-merge orders, shipments, incidents, or Slack messages. One shipment reply applies to the one order message it names. A reply is not owner approval for a new charge; the cost gate still applies.
 
@@ -79,6 +82,56 @@ Call ShipMonk with curl, or with another client whose User-Agent is not Python-u
 Read orders with the documented `GET /v1/integrations/orders-list`. The list has no Action Required query parameter. Page the account (or stores `19002` and `18969`) and keep orders where at least one `actions_required` flag is true. Do not keep an order only because `at_risk` is true, and do not drop an order because `at_risk` is false. On 2026-10-30 a full read returned 5629 orders, the same total as the app, with 4 orders having any flag true, while the app badge showed 5. Reconcile that difference before acting. The documented processing status `awaiting_carrier_processing` is not, by itself, the exact reason `halted awaiting carrier processing`. Confirm the exact live reason before the replacement branch.
 
 The documented order write is the upsert `POST /v1/integrations/order`, not a partial PATCH. Retrieve and reconcile the complete required representation and preserve fields before writing, then read the order back. Never invent endpoints, payload fields, idempotency headers, or a USPS Priority service id. A shipping method on the order has an integer `id` and a `name`; use an id verified from the live account, not a guessed constant. If semantics or preservation cannot be established, stop the API mutation and flag it.
+
+### How to write each reply
+
+Post the Block Kit card in [the Slack blocks reference](references/slack-blocks.md) when the sender accepts `blocks`. The card is a two-column field grid, then one context line, then an actions row. Do not fold those fields into a paragraph. Do not print a store id label, the full address, email, or phone. The incident ledger still keeps store id. The ShipMonk link may contain the store id in its path.
+
+Every card includes order number, order status, processing status, every true `actions_required` flag, destination state (and country when it is not the US), current shipping service, and a **View order in ShipMonk** link button. Add *Return* when the order has a return. Add *Draft* when an unsent draft exists, labeled DRAFT ONLY / unsent. If no service is set, say that and the requested service. Skip a field only when it does not apply.
+
+Write status words like "Fulfilled" and "En route", not raw keys. The context line states what was done or the one suggested next step. Do not add a boilerplate footer such as "no shipment change in this run."
+
+When the sender accepts only markdown, use the same fields in the same order, one labeled line each, and make the order link the words "View order in ShipMonk". Do not invent a button that is not in the payload.
+
+**Built-in action.** If a built-in action applies, put that control in the reply and do not replace it with a different suggestion. The controls and their gates are in [the Slack listener reference](references/slack-listener.md).
+
+- Return stage exactly `returned`: the **Draft address-check email** button. This wins over the USPS Priority button. The click saves an unsent draft from `hello@runeastpeak.com`. It does not send mail.
+- Verified editable Hawaii or Alaska, and not returned: the USPS Priority button. Do not use FlavorCloud. Do not add that button, and do not describe the order as rerouted, when it is already en route, packed, returned, or otherwise not editable.
+
+A **View order in ShipMonk** button is a URL button and does not need a click handler. **Draft address-check email** and **USPS Priority** are `action_id` buttons. Post them only when the sender can deliver Block Kit actions and a click reaches an agent that can run [the Slack listener](references/slack-listener.md). If it cannot, leave those buttons off and put the same words on the context line. Do not post a button that does nothing.
+
+**No built-in action.** When no action button applies, the context line is one suggested step. Phrase it as a suggestion, not as work already done. A suggestion in Slack is not authorization to perform it. Use the flag that blocks fulfillment:
+
+- `address`: correct the address so ShipMonk can submit it.
+- `item_mapping`: map the unmapped items to products.
+- `shipping_mapping`: choose a real carrier service for the requested method. An editable Hawaii or Alaska order uses the built-in USPS Priority action instead.
+- `customs`: fill in the missing customs details.
+- `hs_code`: add the missing HS codes.
+- `routing` or `pending_b2b_routing`: add the missing routing instructions.
+- `freight_quote`: choose a freight quote.
+- `freight_info`: add the freight details needed for a quote.
+- `ship_short`: decide whether to ship short or wait for the missing units.
+- `global_e_label`: get the missing Global-e label.
+- `automation_rule`: open the order and clear the automation-rule hold.
+- `value_added_service_problem`: fix the value-added service, or change the order if it cannot be done.
+- `at_risk`, and the order is still editable and is not Hawaii or Alaska: check whether it can still make the ship-by date. Treat a faster service as a suggestion until someone approves the change.
+- `at_risk`, and the order is already packed, en route, or otherwise not editable: leave the service alone. Check tracking and tell the customer if it will miss the date. If the return stage is `returned`, use the address-check button instead of this suggestion.
+
+If several flags are true, list all of them under Action required and use the blocking one for the context line or action button. If the order is not editable, do not suggest changing the address, the service, or the items.
+
+The 8257 card below is the shape. Its Draft address-check button is the control, not a claim that a draft was saved. Full JSON is in the blocks reference.
+
+```
+*Order #8257*
+*Status:* Fulfilled
+*Processing:* En route
+*Return:* Returned · received Oct 21
+*Action required:* At risk
+*Ship to:* Hawaii
+*Service:* USPS Priority Mail
+Already en route. Service left unchanged.
+[Draft address-check email] [View order in ShipMonk]
+```
 
 ## Verification, completion and restrictions
 
