@@ -349,6 +349,96 @@ class ListenerTests(unittest.TestCase):
         payload["user"] = {"id": BOT_USER, "name": BOT_APP_NAME}
         self.assertEqual(classify(payload, bot_user_id=BOT_USER)["reason"], "bot")
 
+    def test_parent_card_without_mention_posts_nothing_and_mention_uses_bot_token(self):
+        calls = []
+
+        def reject(method, body):
+            calls.append(method)
+            raise AssertionError(method)
+
+        parents = [
+            {
+                "type": "message",
+                "channel": "C0CCJJGG6HK",
+                "user": "UOTHER",
+                "ts": "1793481649.569669",
+                "text": "At-risk shipments · Oct 31",
+            },
+            {
+                "type": "message",
+                "channel": "C0CCJJGG6HK",
+                "ts": "1793485200.000100",
+                "text": "At-risk shipments · Oct 31\n2 flagged orders shown",
+                "blocks": [
+                    {
+                        "type": "header",
+                        "text": {
+                            "type": "plain_text",
+                            "text": ":warning: At-risk shipments · Oct 31",
+                        },
+                    }
+                ],
+            },
+        ]
+        for parent in parents:
+            decision = listen(parent, bot_user_id=BOT_USER, transport=reject, post=True)
+            self.assertIsNone(decision["action"])
+            self.assertFalse(decision["posted"])
+            self.assertNotIn("<@", parent["text"])
+            self.assertIn(decision["reason"], {"report_post", "no_mention", "bot"})
+        self.assertEqual(calls, [])
+
+        token = "xoxb-mention-path-test"
+        seen = []
+
+        def opener(request, timeout):
+            seen.append({
+                "url": request.full_url,
+                "auth": request.get_header("Authorization"),
+                "body": request.data.decode("utf-8"),
+            })
+            method = request.full_url.rsplit("/", 1)[-1]
+            raw = (
+                b'{"ok": true, "user_id": "UBOT"}'
+                if method == "auth.test"
+                else b'{"ok": true, "ts": "1793485300.000200"}'
+            )
+
+            class Response:
+                def read(self):
+                    return raw
+
+                def __enter__(self):
+                    return self
+
+                def __exit__(self, *args):
+                    return False
+
+            return Response()
+
+        transport = UrllibSlackTransport(token, opener=opener)
+        mentioned = listen(
+            human_reply(f"<@{BOT_USER}> USPS Priority"),
+            transport=transport,
+            token=token,
+            post=True,
+        )
+        self.assertEqual(mentioned["action"], "usps_priority")
+        self.assertTrue(mentioned["posted"])
+        self.assertEqual(
+            [item["url"] for item in seen],
+            ["https://slack.com/api/auth.test", "https://slack.com/api/chat.postMessage"],
+        )
+        reply = json.loads(seen[1]["body"])
+        self.assertEqual(reply["channel"], "C0CCJJGG6HK")
+        self.assertEqual(reply["thread_ts"], ORDER_TS)
+        self.assertNotIn("username", reply)
+        self.assertNotIn("blocks", reply)
+        self.assertEqual(seen[1]["auth"], "Bearer " + token)
+        self.assertNotIn(token, seen[1]["body"])
+        self.assertNotIn(token, json.dumps(mentioned))
+        self.assertNotIn("No changes made", reply["text"])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -2,7 +2,9 @@
 
 Use this when a Slack reply on an at-risk order message is the trigger. Do not reply to East Peak Operations. Reply to every human @mention. An exact action label or a button runs a shipment action. Any other mention is a conversation: answer it in the thread.
 
-The listener posts as **East Peak Operations**, the same Slack app that posts the cards. The bot token is the secret `SLACK_BOT_TOKEN`. Do not create a second bot. Never print, log, or commit the token. When that token is present, resolve the bot user id with `auth.test` before deciding who spoke. The token stays on the Authorization header.
+If the incoming message does not @mention East Peak Operations, stop with no Slack message. Do not post "No changes made". Do not explain order-message timestamps. Do not use Cursor's Send to Slack tool. A reply is posted only through `slack_poster.post_thread_reply` with the secret `SLACK_BOT_TOKEN` (`chat.postMessage`). Slack then shows East Peak Operations.
+
+The listener posts as **East Peak Operations**, the same Slack app that posts the cards. The bot token is the secret `SLACK_BOT_TOKEN`. Do not create a second bot. Never print, log, or commit the token. When that token is present, resolve the bot user id with `auth.test` before deciding who spoke. The token stays on the Authorization header. Do not set `username` on the reply.
 
 Ignore all of the following. None of them is a human action, and the listener does not reply to them:
 
@@ -27,13 +29,13 @@ An action input names **one** order message, comes from a person, and is not one
 2. A message event whose `channel` is `C0CCJJGG6HK` and whose text @mentions East Peak Operations. After the mention is removed, an exact action label below is that shipment action. The same label after `<order message ts>` and one space is that action for the named order message. Any other remaining text is a conversation.
 3. A conversation still needs the @mention. Answer the question, show what they asked to see, or change this skill when they ask you to adjust yourself. Do not run a shipment action unless the words clearly ask for one. If a shipment change names zero orders or more than one, ask which order and do not guess. A conversation or a skill change still gets a reply when it names no order.
 
-A channel message or thread reply with no @mention does not map, even when the words are an allowed action. Do not stay silent on a human @mention because the words are not an exact label, or because the message names no order.
+A channel message or thread reply with no @mention does not map, even when the words are an allowed action. That includes the daily parent and every later parent the same day. Produce no Slack reply at all. Do not stay silent on a human @mention because the words are not an exact label, or because the message names no order.
 
 Do not pick a shipment when the message names zero orders or more than one. Do not auto-merge orders, shipments, incidents, or Slack messages. Do not fold the reply or the result into the parent. One shipment change updates at most the one order that message already identified.
 
 ## How a conversation is formatted
 
-Post the reply with `post_reply` and blocks from `conversation_blocks`. Do not post a paragraph.
+Post the reply with `slack_poster.post_thread_reply` and blocks from `conversation_blocks`. Do not post a paragraph. Do not use Cursor's Send to Slack tool.
 
 1. Lead: one sentence, rendered bold. It answers the ask.
 2. Bullets: the few facts they need, one per line.
@@ -47,7 +49,7 @@ Do not treat `processing_status` as the shipment stage when the order lists any 
 
 ## How a reply maps to an action
 
-Match the button `action_id`, the exact action label, or plain language that clearly asks for that same action. Slack text does not establish the halted reason; the live ShipMonk reason does. A mention that matches none of these is a conversation. Reply to it. Do not update the shipment from a conversation unless they asked for one of these actions.
+Match the button `action_id`, the exact action label, or plain language that clearly asks for that same action. Slack text does not establish the halted reason; the live ShipMonk reason does. A mention that matches none of these is a conversation. Reply to it. Do not update the shipment from a conversation unless they asked for one of these actions. A message with no @mention gets no Slack reply.
 
 | Reply | Existing action | What the tree then does |
 | --- | --- | --- |
@@ -122,7 +124,7 @@ Nested reply, when the client can set `thread_ts` to the order message:
 }
 ```
 
-The message must @mention East Peak Operations. After that mention is removed, an exact label is a shipment action: `USPS Priority`, `guarded clone and submit`, `unsent Gmail draft`, `Draft an email to the customer`, or `Draft address-check email`. Any other text is a conversation. The listener classifies it as `conversation` and does not post a stock acceptance line. Write the reply with `conversation_blocks` and post it with `post_reply`. A `posted: false` result on a conversation means the stock line was not sent. It does not mean to stay silent.
+The message must @mention East Peak Operations. After that mention is removed, an exact label is a shipment action: `USPS Priority`, `guarded clone and submit`, `unsent Gmail draft`, `Draft an email to the customer`, or `Draft address-check email`. Any other text is a conversation. The listener classifies it as `conversation` and does not post a stock acceptance line. Write the reply with `conversation_blocks` and post it with `slack_poster.post_thread_reply`. A `posted: false` result on a conversation means the stock line was not sent. It does not mean to stay silent.
 
 Same-thread fallback, when the reply can only sit under the daily parent:
 
@@ -139,7 +141,7 @@ Same-thread fallback, when the reply can only sit under the daily parent:
 
 The same other labels may replace `USPS Priority` in that text. Other words are a conversation, answered on that thread. A bot-authored copy of either payload does not map. When someone asks to see a draft, quote the saved unsent draft's subject and body in the thread, say it is in the inbox, and do not send it. The standing order card still omits the street, email, and phone.
 
-After a mapped action, post the verified result or the exact blocker as a further reply tied to that order message. Post that reply with `chat.postMessage` as East Peak Operations, using `SLACK_BOT_TOKEN`. Do not set a different `username`. Do not edit the parent. Do not mark the shipment resolved because the reply was posted. Do not answer the bot's own follow-up.
+After a mapped action, post the verified result or the exact blocker as a further reply tied to that order message. Post that reply with `slack_poster.post_thread_reply` (`chat.postMessage`) as East Peak Operations, using `SLACK_BOT_TOKEN`. Do not use Cursor's Send to Slack tool. Do not set a different `username`. Do not edit the parent. Do not mark the shipment resolved because the reply was posted. Do not answer the bot's own follow-up. A message with no @mention produces no reply.
 
 ## Draft address-check email
 

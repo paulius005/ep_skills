@@ -13,7 +13,7 @@ import json
 import os
 import re
 
-from slack_poster.post import TOKEN_ENV, UrllibSlackTransport
+from slack_poster.post import TOKEN_ENV, UrllibSlackTransport, post_thread_reply
 
 BOT_APP_NAME = "East Peak Operations"
 CHANNEL_ID = "C0CCJJGG6HK"
@@ -88,15 +88,22 @@ def listen(
     decision = classify(event, bot_user_id=bot_user_id)
     result = dict(decision)
     result["posted"] = False
-    # A conversation needs a written answer. Do not post the stock acceptance line.
-    if not post or not decision["action"] or decision["action"] == "conversation":
+    # A conversation is answered with conversation_blocks, not this stock line.
+    # A missing @mention, a bot post, and a parent card have no action.
+    if (
+        not post
+        or not decision["action"]
+        or decision["action"] == "conversation"
+        or not decision.get("thread_ts")
+    ):
         return result
-    if transport is None:
-        if not secret:
-            raise RuntimeError(f"{TOKEN_ENV} is not set")
-        transport = UrllibSlackTransport(secret)
-    body = _reply_body(decision)
-    posted = transport("chat.postMessage", body)
+    posted = post_thread_reply(
+        channel_id=CHANNEL_ID,
+        thread_ts=str(decision["thread_ts"]),
+        text=_reply_text(decision),
+        transport=transport,
+        token=secret,
+    )
     result["posted"] = True
     result["ts"] = posted.get("ts")
     return result
@@ -110,18 +117,12 @@ def _bot_user_id(transport) -> str:
     return str(user_id)
 
 
-def _reply_body(decision: dict) -> dict:
+def _reply_text(decision: dict) -> str:
     label = decision["label"] or decision["action"]
-    return {
-        "channel": CHANNEL_ID,
-        "thread_ts": decision["thread_ts"],
-        "text": (
-            f"Accepted {label} from a human @mention. "
-            "The decision tree runs before any shipment change."
-        ),
-        "unfurl_links": False,
-        "unfurl_media": False,
-    }
+    return (
+        f"Accepted {label} from a human @mention. "
+        "The decision tree runs before any shipment change."
+    )
 
 
 def _unwrap(event: dict) -> dict:
