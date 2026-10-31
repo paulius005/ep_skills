@@ -2,7 +2,7 @@
 
 Use this payload when the sender accepts `blocks`. The parent message stays the one-line daily title. These blocks are the thread reply for one order.
 
-Do not add a store id field. Do not put the address, email, or phone in any block, including `value`. The `value` may carry `order_number`, `order_key`, and `rma` so the listener can re-read the order.
+Do not add a store id field. Do not put the street address, email, or phone in any block, including `value`. The `value` may carry `order_number`, `order_key`, and `rma` so the listener can re-read the order. A proposed address fix is not part of this card. Post Before and After as a separate thread reply.
 
 Plain words, not raw status keys. Omit a field object when it does not apply. A section `fields` array holds at most 10 items.
 
@@ -34,7 +34,7 @@ Plain words, not raw status keys. Omit a field object when it does not apply. A 
       "elements": [
         {
           "type": "mrkdwn",
-          "text": "Already en route. Service left unchanged."
+          "text": "Already en route. Service left unchanged. Draft an email to the customer. Ask them to check the address."
         }
       ]
     },
@@ -91,5 +91,6 @@ Use this only when the sender cannot post `blocks`. Same facts, no fake buttons.
 *Ship to:* Hawaii
 *Service:* USPS Priority Mail
 Already en route. Service left unchanged.
+Draft an email to the customer. Ask them to check the address.
 <https://app.shipmonk.com/orders/lookup/19002/18927830040707|View order in ShipMonk>
 ```

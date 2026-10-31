@@ -18,7 +18,7 @@ Keep these fields in the operational record:
 | Result | Readback time/reference and observed persisted state, replacement or draft/message ID, amount/currency, discrepancy or exact blocker |
 | Next step | Outstanding risk, owner decision needed, pending/denied/uncertain outcome, and evidence required to resume |
 
-Keep personal data out of general logs and Slack. Refer to protected order records for recipient/items instead of copying addresses, email addresses or payment data into the ledger unnecessarily. Never store secrets.
+Keep personal data out of general logs and the incident ledger. Refer to protected order records for recipient/items instead of copying addresses, email addresses or payment data into the ledger unnecessarily. An address-fix proposal in the daily Slack thread is the one place that shows the ship-to before and after. Do not copy those lines into the ledger. Never store secrets.
 
 ## Claim, apply, verify, resume
 

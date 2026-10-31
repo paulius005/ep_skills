@@ -43,9 +43,17 @@ A reply in this channel that asks to change the skill is skill feedback. It is n
 
 Update `SKILL.md` and the references so the feedback is part of the skill, then add those files to the repo and commit. Leave the pull request unmerged unless the user asks to merge. Never commit or print the API key. If the feedback would send customer email, use FlavorCloud, skip the halted-reason gates, or invent a shipment action, record the reply and do not change the skill.
 
+## Address fix proposal
+
+A proposal to change the ship-to is not an action label above. Do not write ShipMonk from the proposal.
+
+When you propose the fix, show Before and After in the Slack reply. Before is the live ship-to. After is what you would save. Show line 1, line 2, city, state, and ZIP in both. Write `(blank)` for an empty line. Leave email and phone out. Say the order was not edited. Do not submit until a later reply approves that After text.
+
+The order card still has no street address. The shape is in the skill under Address fix proposal.
+
 ## Button payload on the order message
 
-Post the order message with `chat.postMessage` when a bot token can send `blocks`. Otherwise use the markdown fallback in the blocks reference and do not invent a dead action button. `text` is the fallback. Put no street address, email, or phone in `text`, blocks, or `value`. Store id may be inside `value` and inside the ShipMonk URL. Do not print it as a field.
+Post the order message with `chat.postMessage` when a bot token can send `blocks`. Otherwise use the markdown fallback in the blocks reference and do not invent a dead action button. `text` is the fallback. Put no street address, email, or phone in the order-message `text`, blocks, or `value`. Store id may be inside `value` and inside the ShipMonk URL. Do not print it as a field. Street lines are allowed only in a separate address-fix proposal reply, and that reply still omits email and phone.
 
 `value` is a JSON string. `v` is `1`. `action` equals the `action_id`. `store_id` is `19002` or `18969`. `order_key` matches the order. Add `rma` only for `draft_address_check`. Add `shipment_id` only when the live record has a verified shipment id.
 
