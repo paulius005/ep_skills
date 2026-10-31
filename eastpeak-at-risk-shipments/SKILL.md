@@ -95,10 +95,10 @@ When the sender accepts only markdown, use the same fields in the same order, on
 
 **Built-in action.** If a built-in action applies, put that control in the reply and do not replace it with a different suggestion. The controls and their gates are in [the Slack listener reference](references/slack-listener.md).
 
-- Return stage exactly `returned`: the **Draft address-check email** button. This wins over the USPS Priority button. The click saves an unsent draft from `hello@runeastpeak.com`. It does not send mail.
+- Return stage exactly `returned`: the **Draft address-check email** button. This wins over the USPS Priority button. The click saves an unsent draft from `hello@runeastpeak.com`. It does not send mail. The context line is exactly `The package was returned after an attempted delivery. Draft an email to the customer. Leave the service unchanged.` Do not replace that sentence with `Suggestion: Draft address-check email. Already en route. Service left unchanged.` The button label is the control. It does not stand in for the sentence.
 - Verified editable Hawaii or Alaska, and not returned: the USPS Priority button. Do not use FlavorCloud. Do not add that button, and do not describe the order as rerouted, when it is already en route, packed, returned, or otherwise not editable.
 
-A **View order in ShipMonk** button is a URL button and does not need a click handler. **Draft address-check email** and **USPS Priority** are `action_id` buttons. Post them only when the sender can deliver Block Kit actions and a click reaches an agent that can run [the Slack listener](references/slack-listener.md). If it cannot, leave those buttons off and put the same words on the context line. Do not post a button that does nothing.
+A **View order in ShipMonk** button is a URL button and does not need a click handler. **Draft address-check email** and **USPS Priority** are `action_id` buttons. Post them only when the sender can deliver Block Kit actions and a click reaches an agent that can run [the Slack listener](references/slack-listener.md). If it cannot, leave those buttons off. For a returned shipment the context line stays the sentence above. Do not prefix it with `Suggestion:` and do not append the button label. Do not post a button that does nothing.
 
 **No built-in action.** When no action button applies, the context line is one suggested step. Phrase it as a suggestion, not as work already done. A suggestion in Slack is not authorization to perform it. Use the flag that blocks fulfillment:
 
@@ -115,7 +115,7 @@ A **View order in ShipMonk** button is a URL button and does not need a click ha
 - `automation_rule`: open the order and clear the automation-rule hold.
 - `value_added_service_problem`: fix the value-added service, or change the order if it cannot be done.
 - `at_risk`, and the order is still editable and is not Hawaii or Alaska: check whether it can still make the ship-by date. Treat a faster service as a suggestion until someone approves the change.
-- `at_risk`, and the order is already packed, en route, or otherwise not editable: leave the service alone. Check tracking and tell the customer if it will miss the date. If the return stage is `returned`, use the address-check button instead of this suggestion.
+- `at_risk`, and the order is already packed, en route, or otherwise not editable: leave the service alone. Check tracking and tell the customer if it will miss the date. If the return stage is `returned`, use the address-check button and the returned-shipment context line instead of this suggestion.
 
 If several flags are true, list all of them under Action required and use the blocking one for the context line or action button. If the order is not editable, do not suggest changing the address, the service, or the items.
 
@@ -129,7 +129,7 @@ The 8257 card below is the shape. Its Draft address-check button is the control,
 *Action required:* At risk
 *Ship to:* Hawaii
 *Service:* USPS Priority Mail
-Already en route. Service left unchanged.
+The package was returned after an attempted delivery. Draft an email to the customer. Leave the service unchanged.
 [Draft address-check email] [View order in ShipMonk]
 ```
 

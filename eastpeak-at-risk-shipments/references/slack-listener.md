@@ -20,7 +20,9 @@ If the event names zero order messages, or more than one, record it and stop. Do
 
 ## Return stage
 
-Do not treat `processing_status` as the shipment stage when the order lists any `returns[].rma`. For each RMA, read `GET /v1/integrations/returns-list?rma={rma}`. Exact status `returned` means the shipment was returned, even when `processing_status` is still `en_route`. That order gets the address-check button and does not get USPS Priority. Do not match the substring "return" in a city, note, or tracking line. Other return statuses are not this gate.
+Do not treat `processing_status` as the shipment stage when the order lists any `returns[].rma`. For each RMA, read `GET /v1/integrations/returns-list?rma={rma}`. The returns list uses `page` and `page_size`, not `pageSize`. Exact status `returned` means the shipment was returned, even when `processing_status` is still `en_route`. That order gets the address-check button and does not get USPS Priority. Do not match the substring "return" in a city, note, or tracking line. Other return statuses are not this gate.
+
+The order-message context line for status `returned` is exactly `The package was returned after an attempted delivery. Draft an email to the customer. Leave the service unchanged.` Do not write `Suggestion: Draft address-check email. Already en route. Service left unchanged.` ShipMonk `return_reason` may be `reason_unknown`. That does not change the context line. The customer draft still must not invent a carrier reason.
 
 ## How a reply maps to an action
 

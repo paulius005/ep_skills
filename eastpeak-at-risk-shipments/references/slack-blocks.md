@@ -34,7 +34,7 @@ Plain words, not raw status keys. Omit a field object when it does not apply. A 
       "elements": [
         {
           "type": "mrkdwn",
-          "text": "Already en route. Service left unchanged."
+          "text": "The package was returned after an attempted delivery. Draft an email to the customer. Leave the service unchanged."
         }
       ]
     },
@@ -61,6 +61,8 @@ Plain words, not raw status keys. Omit a field object when it does not apply. A 
 ```
 
 `Return` is present because this order's return status is `returned` even though processing is still en route. Drop that field when there is no return.
+
+For that returned card the context line is `The package was returned after an attempted delivery. Draft an email to the customer. Leave the service unchanged.` Do not shorten it to `Suggestion: Draft address-check email. Already en route. Service left unchanged.`
 
 `Service` is "Not set (requested Standard)" when ShipMonk has not resolved a method.
 
@@ -90,6 +92,6 @@ Use this only when the sender cannot post `blocks`. Same facts, no fake buttons.
 *Action required:* At risk
 *Ship to:* Hawaii
 *Service:* USPS Priority Mail
-Already en route. Service left unchanged.
+The package was returned after an attempted delivery. Draft an email to the customer. Leave the service unchanged.
 <https://app.shipmonk.com/orders/lookup/19002/18927830040707|View order in ShipMonk>
 ```
