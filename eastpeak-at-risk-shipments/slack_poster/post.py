@@ -44,6 +44,37 @@ class UrllibSlackTransport:
         return payload
 
 
+def post_thread_reply(
+    *,
+    channel_id: str,
+    thread_ts: str,
+    text: str,
+    transport=None,
+    token: str | None = None,
+) -> dict:
+    """Post one thread reply with chat.postMessage as East Peak Operations.
+
+    The token is read from SLACK_BOT_TOKEN when `transport` is omitted. It is
+    sent only on the Authorization header. The body has no username override,
+    so Slack shows the app that owns the token.
+    """
+    if not thread_ts:
+        raise RuntimeError("thread_ts is required")
+    if transport is None:
+        secret = token if token is not None else os.environ.get(TOKEN_ENV)
+        if not secret:
+            raise RuntimeError(f"{TOKEN_ENV} is not set")
+        transport = UrllibSlackTransport(secret)
+    body = {
+        "channel": channel_id,
+        "thread_ts": thread_ts,
+        "text": text,
+        "unfurl_links": False,
+        "unfurl_media": False,
+    }
+    return transport("chat.postMessage", body)
+
+
 def _message_body(channel_id: str, text: str, blocks: list, thread_ts: str | None = None) -> dict:
     body = {
         "channel": channel_id,
