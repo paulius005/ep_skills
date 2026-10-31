@@ -55,7 +55,7 @@ This reporting rule applies to **every branch and every attempted or taken opera
 1. Verify the **East Peak workspace** and channel **C0CCJJGG6HK** at [the configured channel](https://east-peak-workspace.slack.com/archives/C0CCJJGG6HK). Stop posting if workspace/channel identity differs. Use the explicitly configured reporting timezone **`America/Los_Angeles` (Pacific)** for this user unless the user changes it. Compute the actual Pacific calendar date at run time in that timezone, including daylight-saving changes, and persist the timezone and date; do not use a hardcoded example date or silently switch day boundaries between workers or runs.
 2. Before creating a parent, consult the durable daily-thread record and search the channel for the day's existing parent. Verify its channel, date and parent message, then reuse it. One parent per Pacific day. On a rerun the same day, reuse that same parent. If multiple candidate parents exist, reconcile rather than adding another. If none exists, claim the daily key atomically, recheck, and create exactly one parent whose entire root text is **`At Risk Shipments [Date] 🧵`**, replacing `[Date]` with that Pacific calendar date in `YYYY-MM-DD`. The parent has no order list and no shipment detail. An uncertain parent creation requires readback/search before retrying.
 3. Persist and read back the verified workspace ID, channel ID, reporting date/timezone, parent message timestamp/`thread_ts` and real permalink. Post one reply per Action Required order under that parent. The parent text stays `At Risk Shipments [Date] 🧵`; the orders in the thread are the Action Required alert. The daily record is shared across incidents and workers. An existing incident from a prior day uses today's parent for new actions, with references to prior entries when useful. On rerun, reuse the shipment's existing order message for that day instead of posting a second one.
-4. Write each order message with [How to write each reply](#how-to-write-each-reply) and the Block Kit in [the Slack blocks reference](references/slack-blocks.md). Keep the order link, order number, order status, processing status, action required, destination, and service. Also include the exact reason, attempted or taken action, verified result or the blocked, denied, failed, or uncertain outcome, and any unsent draft labeled **DRAFT ONLY / unsent**. For a verified editable HI/AK shipment, include the USPS Priority button. For return status exactly `returned`, include the address-check draft button instead. Never represent a Gmail draft as sent, a timeout as failure or success without evidence, or a proposed action as completed. Include failed attempts and uncertain outcomes even when no mutation can be verified. Omit secrets and unnecessary customer data. Keep full address, email, and phone out of the message.
+4. Write each order message with [How to write each reply](#how-to-write-each-reply) and the Block Kit in [the Slack blocks reference](references/slack-blocks.md). Keep the order link, order number, order status, processing status, action required, destination, and service. Also include the exact reason, attempted or taken action, verified result or the blocked, denied, failed, or uncertain outcome, and any unsent draft labeled **DRAFT ONLY / unsent**. For a verified editable HI/AK shipment, include the USPS Priority button. For return status exactly `returned`, include the address-check draft button instead. When the address flag is true and address line 2 is longer than 50 characters, keep the fix out of the card and post it as the next reply in this same daily thread, as specified in [How to write each reply](#how-to-write-each-reply). Never represent a Gmail draft as sent, a timeout as failure or success without evidence, or a proposed action as completed. Include failed attempts and uncertain outcomes even when no mutation can be verified. Omit secrets and unnecessary customer data. Keep full address, email, and phone out of the message.
 5. Deduplicate reporting by stable incident/action/attempt reference and its persisted reply ID. On rerun, read back the existing order message and update it only for a changed outcome instead of appending a duplicate shipment message; retain the earlier failure/uncertainty history when reconciling. A distinct authorized retry gets its own attempt reference and its own reply tied to that order message, still under the same daily parent. Read back each Slack create/update and persist its channel, parent and reply identifiers/permalink. If reporting times out, reconcile before retrying. If Slack reporting is blocked or uncertain, record the pending report and exact blocker in the ledger and completion handoff; never claim it was posted or recursively try to report a reporting failure. Reconcile pending reports into their recorded daily parent when access returns.
 
 ## Slack listener
@@ -102,7 +102,7 @@ A **View order in ShipMonk** button is a URL button and does not need a click ha
 
 **No built-in action.** When no action button applies, the context line is one suggested step. Phrase it as a suggestion, not as work already done. A suggestion in Slack is not authorization to perform it. Use the flag that blocks fulfillment:
 
-- `address`: correct the address so ShipMonk can submit it.
+- `address`: correct the address so ShipMonk can submit it. If address line 2 is longer than 50 characters, use [Address line 2 over 50 characters](#address-line-2-over-50-characters) instead of this generic line.
 - `item_mapping`: map the unmapped items to products.
 - `shipping_mapping`: choose a real carrier service for the requested method. An editable Hawaii or Alaska order uses the built-in USPS Priority action instead.
 - `customs`: fill in the missing customs details.
@@ -118,6 +118,30 @@ A **View order in ShipMonk** button is a URL button and does not need a click ha
 - `at_risk`, and the order is already packed, en route, or otherwise not editable: leave the service alone. Check tracking and tell the customer if it will miss the date. If the return stage is `returned`, use the address-check button instead of this suggestion.
 
 If several flags are true, list all of them under Action required and use the blocking one for the context line or action button. If the order is not editable, do not suggest changing the address, the service, or the items.
+
+### Address line 2 over 50 characters
+
+On every daily report, inspect each order whose `actions_required.address` flag is true before writing its card. Read the live `ship_to.street2` and count its characters. The orders API does not return the validation sentence. Do not infer this error from the word "address" alone.
+
+If `street2` is missing or 50 characters or fewer, this is not the Address 2 limit. Use the generic address line: correct the address so ShipMonk can submit it. Do not post the extra reply.
+
+If `street2` is longer than 50 characters, ShipMonk is rejecting the order with "Address 2 exceeded limit of 50 characters." The order card context line is only `Address line 2 is {n} characters. Fix suggestion is the next message.` Then post one separate reply in the same daily thread, immediately after that card. Slack has no thread inside a thread reply, so this second reply uses the daily parent's `thread_ts`. Name the order in its first line. Do not fold the suggestion into the card, start a new parent, or edit the parent. Do not put the street, the line 2 text, email, or phone in either message.
+
+That reply suggests the fix. It does not change the address. A suggestion is not authorization to edit ShipMonk. Do not truncate line 2 to 50 characters in the suggestion when that would cut a word.
+
+Classify line 2 without quoting it:
+
+- Apartment, suite, or unit (`apt`, `apartment`, `suite`, `ste`, `unit`, or `#`): keep that unit. Suggest shortening only the extra words so line 2 is 50 characters or fewer, on a word boundary. Do not cut the unit token. Leave street line 1 unchanged unless a person has verified it must move.
+- Guest note, stay dates, or another comment, and not a unit: suggest removing that note from address line 2. If the guest named in the note is already the recipient name, say the recipient name is already on the order. If the note names someone else, say a person should confirm before removing it, and do not quote the name. Leave the street on line 1 unchanged.
+- Anything else over 50 characters: suggest shortening line 2 to 50 characters or fewer on a word boundary, and say how many characters would be removed. Do not quote the text. Ask a person to confirm before anyone edits it.
+
+```
+*Order #{order_number}*
+Address line 2 is {n} characters. ShipMonk rejects Address 2 over 50 characters ("Address 2 exceeded limit of 50 characters").
+{one sentence on the classification, with no address text}
+Suggestion: {the fix above}.
+This report does not change the address.
+```
 
 The 8257 card below is the shape. Its Draft address-check button is the control, not a claim that a draft was saved. Full JSON is in the blocks reference.
 

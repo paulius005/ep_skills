@@ -64,6 +64,8 @@ Plain words, not raw status keys. Omit a field object when it does not apply. A 
 
 `Service` is "Not set (requested Standard)" when ShipMonk has not resolved a method.
 
+When `actions_required.address` is true and `ship_to.street2` is longer than 50 characters, the context line is only `Address line 2 is {n} characters. Fix suggestion is the next message.` The fix itself is the next reply in the same daily thread, not another field on this card. That reply follows [Address line 2 over 50 characters](../SKILL.md#address-line-2-over-50-characters). Do not put the street, line 2 text, email, or phone in the card or in that reply.
+
 Add a *Draft* field, "DRAFT ONLY / unsent", only after a draft is saved. Do not say one was saved because the button is on the card.
 
 ## Buttons

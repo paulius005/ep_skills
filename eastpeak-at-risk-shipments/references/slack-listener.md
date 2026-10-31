@@ -43,6 +43,8 @@ A reply in this channel that asks to change the skill is skill feedback. It is n
 
 Update `SKILL.md` and the references so the feedback is part of the skill, then add those files to the repo and commit. Leave the pull request unmerged unless the user asks to merge. Never commit or print the API key. If the feedback would send customer email, use FlavorCloud, skip the halted-reason gates, or invent a shipment action, record the reply and do not change the skill.
 
+The daily report posts an Address line 2 suggestion as its own reply under the daily parent. That reply is a report, not an action label. Do not map it to a shipment action, and do not edit the address because that reply exists. Changing the address remains outside this listener. The report only suggests the fix, as specified in the skill.
+
 ## Button payload on the order message
 
 Post the order message with `chat.postMessage` when a bot token can send `blocks`. Otherwise use the markdown fallback in the blocks reference and do not invent a dead action button. `text` is the fallback. Put no street address, email, or phone in `text`, blocks, or `value`. Store id may be inside `value` and inside the ShipMonk URL. Do not print it as a field.
