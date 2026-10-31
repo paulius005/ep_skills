@@ -102,7 +102,7 @@ A **View order in ShipMonk** button is a URL button and does not need a click ha
 
 **No built-in action.** When no action button applies, the context line is one suggested step. Phrase it as a suggestion, not as work already done. A suggestion in Slack is not authorization to perform it. Use the flag that blocks fulfillment:
 
-- `address`: correct the address so ShipMonk can submit it.
+- `address`: correct the address so ShipMonk can submit it. A proposal shows the before and after in that same reply. Copy every ship-to line that would change, labeled Before and After. If a line would be removed, show the old line and say the new line is empty. Leave email and phone out. Do not edit the order in that proposal. Wait until the person tells you to apply it.
 - `item_mapping`: map the unmapped items to products.
 - `shipping_mapping`: choose a real carrier service for the requested method. An editable Hawaii or Alaska order uses the built-in USPS Priority action instead.
 - `customs`: fill in the missing customs details.

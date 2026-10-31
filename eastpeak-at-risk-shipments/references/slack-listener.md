@@ -37,6 +37,10 @@ Match the button `action_id` or the exact action label. Do not paraphrase. Slack
 
 A mapped reply is still not approval for a new charge. Unknown or uncovered fees stop for owner approval. Never charge the customer again.
 
+## Address fix proposal
+
+When a person asks what is wrong with an address, or asks how to correct it before they approve a change, the reply shows the before and after. Copy every ship-to line that would change. Label the old text Before and the new text After. If a line would be removed, show the old line and say the new line is empty. Do not describe the line only by its length. Leave email and phone out. Do not change the order in that proposal. Apply the change only after the person says to.
+
 ## Skill feedback
 
 A reply in this channel that asks to change the skill is skill feedback. It is not one of the action labels above. Do not update the ShipMonk shipment from it, and do not auto-merge orders or shipments because of it.
