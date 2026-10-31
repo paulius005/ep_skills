@@ -35,10 +35,10 @@ Do not pick a shipment when the message names zero orders or more than one. Do n
 
 ## How a conversation is formatted
 
-Post the reply with `slack_poster.post_thread_reply` and blocks from `conversation_blocks`. Do not post a paragraph. Do not use Cursor's Send to Slack tool.
+Post the reply with `slack_poster.post_thread_reply` and blocks from `conversation_blocks`. Do not post a paragraph. Do not use Cursor's Send to Slack tool. A request to see a saved draft does not use this shape. Use `draft_quote_blocks` for that reply, described below.
 
 1. Lead: one sentence, rendered bold. It answers the ask.
-2. Bullets: the few facts they need, one per line.
+2. Bullets: the few facts they need, one per line. Do not put an email body, a street address, or any other copied passage into these bullets.
 3. Note: one context line, 75 characters or fewer, for the limit or the next step.
 
 A request to adjust yourself uses that same shape. The lead says the skill was updated. The bullets say what changed. The note names a limit that stayed, or says the shipment was not changed.
@@ -139,7 +139,7 @@ Same-thread fallback, when the reply can only sit under the daily parent:
 }
 ```
 
-The same other labels may replace `USPS Priority` in that text. Other words are a conversation, answered on that thread. A bot-authored copy of either payload does not map. When someone asks to see a draft, quote the saved unsent draft's subject and body in the thread, say it is in the inbox, and do not send it. The standing order card still omits the street, email, and phone.
+The same other labels may replace `USPS Priority` in that text. Other words are a conversation, answered on that thread. A bot-authored copy of either payload does not map. When someone asks to see a draft, post the saved unsent draft with `draft_quote_blocks`. Keep the subject, from, to, and body in one quote, with the body as paragraphs. Do not run that text through `conversation_blocks`, and do not turn each line into a bullet. Say it is in the inbox, and do not send it. The standing order card still omits the street, email, and phone.
 
 After a mapped action, post the verified result or the exact blocker as a further reply tied to that order message. Post that reply with `slack_poster.post_thread_reply` (`chat.postMessage`) as East Peak Operations, using `SLACK_BOT_TOKEN`. Do not use Cursor's Send to Slack tool. Do not set a different `username`. Do not edit the parent. Do not mark the shipment resolved because the reply was posted. Do not answer the bot's own follow-up. A message with no @mention produces no reply.
 

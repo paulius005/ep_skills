@@ -132,6 +132,10 @@ Put the button in `actions.elements` only when its gate passes. Slack allows fiv
 
 The listener reads that JSON from the Slack `block_actions` payload. See [the listener contract](slack-listener.md).
 
+## Draft quote
+
+When someone asks to see a saved draft, post `draft_quote_blocks`. The lead is `The unsent draft is ready for review.` The next block is one `rich_text_quote` containing the subject, from, to, and the email body as paragraphs. The note is `Not sent. The draft is in your inbox.` Do not use `conversation_blocks` for this reply. Do not prefix the email lines with `•`.
+
 ## Plain-text fallback
 
 `text` repeats the same facts for notifications. It has no fake buttons. Email, phone, and the street stay out of the order fallback. The address follow-up fallback includes `Before:` and `After:` only.

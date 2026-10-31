@@ -237,6 +237,41 @@ def conversation_blocks(
     return text, blocks
 
 
+def draft_quote_blocks(subject: str, sender: str, recipient: str, body: str) -> tuple[str, list]:
+    """Show an unsent customer draft as the email. Do not turn its lines into bullets.
+
+    This function does not post and does not send the draft.
+    """
+    subject = " ".join((subject or "").replace("*", "").split())
+    sender = " ".join((sender or "").split())
+    recipient = " ".join((recipient or "").split())
+    if not subject or not sender or not recipient:
+        raise ValueError("subject, sender, and recipient are required")
+    lines = [" ".join(raw.split()) for raw in (body or "").replace("\r\n", "\n").split("\n")]
+    body_text = "\n".join(lines).strip("\n")
+    if not body_text.strip():
+        raise ValueError("body is required")
+    quoted = f"Subject: {subject}\nFrom: {sender}\nTo: {recipient}\n\n{body_text}"
+    if len(quoted) > SECTION_MAX:
+        raise ValueError("draft quote exceeds 3000 characters")
+    lead = "The unsent draft is ready for review."
+    note = "Not sent. The draft is in your inbox."
+    blocks = [
+        _section(f"*{lead}*"),
+        {
+            "type": "rich_text",
+            "elements": [
+                {
+                    "type": "rich_text_quote",
+                    "elements": [{"type": "text", "text": quoted}],
+                }
+            ],
+        },
+        _context(note),
+    ]
+    return f"{lead}\n{quoted}\n{note}", blocks
+
+
 def _scrub(text: str, shipment: Shipment) -> str:
     for hidden in (shipment.email, shipment.phone, shipment.street1):
         if hidden and hidden in text:

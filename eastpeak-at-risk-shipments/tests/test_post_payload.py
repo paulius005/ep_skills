@@ -10,7 +10,7 @@ from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from slack_poster.blocks import conversation_blocks, plan_messages, report_from_dict  # noqa: E402
+from slack_poster.blocks import conversation_blocks, draft_quote_blocks, plan_messages, report_from_dict  # noqa: E402
 from slack_poster.post import SlackAPIError, UrllibSlackTransport, post_reply, post_report  # noqa: E402
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
@@ -275,6 +275,29 @@ class PayloadTests(unittest.TestCase):
         self.assertEqual(blocks[2]["type"], "context")
         self.assertLessEqual(len(blocks[2]["elements"][0]["text"]), 75)
         self.assertIn("I updated how I reply.", text)
+
+    def test_draft_quote_keeps_the_email_as_paragraphs(self):
+        body = (
+            "Hi Aleisha,\n\n"
+            "Your East Peak order #8257 was returned to us on October 21, 2026.\n\n"
+            "75-5766 Kuakini Hwy\n"
+            "KAILUA KONA, HI 96740-1739"
+        )
+        text, blocks = draft_quote_blocks(
+            "Address Confirmation for Your East Peak Order #8257",
+            "East Peak <hello@runeastpeak.com>",
+            "aleishawilliams1994@gmail.com",
+            body,
+        )
+        self.assertEqual(blocks[0]["text"]["text"], "*The unsent draft is ready for review.*")
+        quote = blocks[1]["elements"][0]
+        self.assertEqual(quote["type"], "rich_text_quote")
+        quoted = quote["elements"][0]["text"]
+        self.assertNotIn("•", quoted)
+        self.assertIn("Hi Aleisha,\n\nYour East Peak order #8257", quoted)
+        self.assertIn("75-5766 Kuakini Hwy\nKAILUA KONA, HI 96740-1739", quoted)
+        self.assertEqual(blocks[2]["elements"][0]["text"], "Not sent. The draft is in your inbox.")
+        self.assertNotIn("•", text)
 
         calls = []
 
