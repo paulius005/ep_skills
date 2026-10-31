@@ -2,7 +2,7 @@
 
 Use this when a Slack reply on an at-risk order message is the trigger. The daily parent and the order message are reports. They do not change a shipment. The listener reads one reply, maps it to one existing action, applies the decision tree in [the skill](../SKILL.md), and updates that ShipMonk shipment only when the tree allows the update.
 
-Read [the incident record](incident-record.md) and take the exclusive claim before any mutation. Re-read the live order immediately before writing. ShipMonk calls use the skill's API rules: curl or a non-Python-urllib client, store `19830`, secret `SHIPMONK_API_KEY` never printed.
+Read [the incident record](incident-record.md) and take the exclusive claim before any mutation. Re-read the live order immediately before writing. ShipMonk calls use the skill's API rules: curl or a non-Python-urllib client, East Peak store `19002` or Manual Store `18969`, secret `SHIPMONK_API_KEY` never printed. The order must be on the Action Required alert.
 
 ## What the listener accepts
 
@@ -30,6 +30,12 @@ Match the button `action_id` or the exact action label. Do not paraphrase. Slack
 
 A mapped reply is still not approval for a new charge. Unknown or uncovered fees stop for owner approval. Never charge the customer again.
 
+## Skill feedback
+
+A reply in this channel that asks to change the skill is skill feedback. It is not one of the action labels above. Do not update the ShipMonk shipment from it, and do not auto-merge orders or shipments because of it.
+
+Update `SKILL.md` and the references so the feedback is part of the skill, then add those files to the repo and commit. Leave the pull request unmerged unless the user asks to merge. Never commit or print the API key. If the feedback would send customer email, use FlavorCloud, skip the halted-reason gates, or invent a shipment action, record the reply and do not change the skill.
+
 ## Button payload on the order message
 
 Post the order message with `chat.postMessage` (or the equivalent) as a reply on the daily parent. Include the button only for an editable verified HI/AK shipment. `text` is the fallback. Put no street address, email, or phone in `text`, blocks, or `value`.
@@ -56,7 +62,7 @@ Post the order message with `chat.postMessage` (or the equivalent) as a reply on
           "type": "button",
           "action_id": "usps_priority",
           "text": { "type": "plain_text", "text": "USPS Priority", "emoji": false },
-          "value": "{\"v\":1,\"action\":\"usps_priority\",\"store_id\":\"19830\",\"order_key\":\"<order_key>\"}"
+          "value": "{\"v\":1,\"action\":\"usps_priority\",\"store_id\":\"<19002 or 18969>\",\"order_key\":\"<order_key>\"}"
         }
       ]
     }
@@ -68,7 +74,7 @@ Add `"shipment_id":"<id>"` inside `value` only when the live record has a verifi
 
 ## Button payload the listener reads
 
-Slack delivers the click as `block_actions`. The listener requires `type`, `channel.id`, `message.ts`, `message.thread_ts`, `actions[0].action_id`, and `actions[0].value`. Ignore other fields. `value` must parse as the JSON object above, with `v` equal to `1` and `action` equal to `usps_priority`. `store_id` must be `19830`. `order_key` must match the order message. Then re-read that order and apply the table.
+Slack delivers the click as `block_actions`. The listener requires `type`, `channel.id`, `message.ts`, `message.thread_ts`, `actions[0].action_id`, and `actions[0].value`. Ignore other fields. `value` must parse as the JSON object above, with `v` equal to `1` and `action` equal to `usps_priority`. `store_id` must be `19002` or `18969`, matching the order. `order_key` must match the order message. Then re-read that order and apply the table.
 
 ```json
 {
@@ -83,7 +89,7 @@ Slack delivers the click as `block_actions`. The listener requires `type`, `chan
       "type": "button",
       "action_id": "usps_priority",
       "block_id": "hialaska-actions",
-      "value": "{\"v\":1,\"action\":\"usps_priority\",\"store_id\":\"19830\",\"order_key\":\"<order_key>\"}"
+      "value": "{\"v\":1,\"action\":\"usps_priority\",\"store_id\":\"<19002 or 18969>\",\"order_key\":\"<order_key>\"}"
     }
   ]
 }
