@@ -1,0 +1,40 @@
+{
+  "pacific_date": "2026-10-30",
+  "channel_id": "C0CCJJGG6HK",
+  "shipments": [
+    {
+      "order_number": "8257",
+      "store_id": "19002",
+      "order_key": "18927830040707",
+      "order_status": "fulfilled",
+      "processing_status": "en_route",
+      "flags": ["at_risk"],
+      "state": "HI",
+      "country": "US",
+      "service": "USPS Priority Mail",
+      "editable": false,
+      "return_status": null,
+      "email": "buyer-8257@example.com",
+      "phone": "555-0101",
+      "street1": "100 Example Ave",
+      "street2": null
+    },
+    {
+      "order_number": "8274",
+      "store_id": "19002",
+      "order_key": "fixture-8274",
+      "order_status": "fulfilled",
+      "processing_status": "en_route",
+      "flags": ["at_risk"],
+      "state": "CA",
+      "country": "US",
+      "service": "ShipMonk Standard",
+      "editable": false,
+      "return_status": null,
+      "email": "buyer-8274@example.com",
+      "phone": "555-0102",
+      "street1": "200 Example Ave",
+      "street2": null
+    }
+  ]
+}

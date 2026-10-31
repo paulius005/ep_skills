@@ -20,7 +20,7 @@ If the event names zero order messages, or more than one, record it and stop. Do
 
 ## Return stage
 
-Do not treat `processing_status` as the shipment stage when the order lists any `returns[].rma`. For each RMA, read `GET /v1/integrations/returns-list?rma={rma}`. Exact status `returned` means the shipment was returned, even when `processing_status` is still `en_route`. That order gets the address-check button and does not get USPS Priority. Do not match the substring "return" in a city, note, or tracking line. Other return statuses are not this gate.
+Do not treat `processing_status` as the shipment stage when the order lists any `returns[].rma`. For each RMA, read `GET /v1/integrations/returns-list?rma={rma}`. Exact status `returned` means the shipment was returned, even when `processing_status` is still `en_route`. That order gets the draft-email button and does not get USPS Priority. Before a draft exists, the context line is `Draft an email to the customer.` After the draft is saved and read back, the line is `The draft email is in your inbox.` and the button is omitted. Do not match the substring "return" in a city, note, or tracking line. Other return statuses are not this gate.
 
 ## How a reply maps to an action
 
@@ -31,9 +31,9 @@ Match the button `action_id` or the exact action label. Do not paraphrase. Slack
 | `action_id` `usps_priority`, or label `USPS Priority` | Hawaii/Alaska USPS Priority selection | Verified HI/AK only, and the return status is not `returned`. If the exact live reason is `halted awaiting carrier processing`, the reply does not submit by itself: set USPS Priority on the eligible replacement, and clone and submit only after the duplicate, original, and cost gates. If the reason is anything else and the shipment is still editable, set USPS Priority, verify it, then save an unsent Gmail draft and never send it. If the shipment is not editable, or Priority cannot be verified, flag it, leave the service unchanged, and do not substitute another carrier. |
 | Label `guarded clone and submit` | Replacement branch | Only when the exact live reason is `halted awaiting carrier processing`. Clone and submit only after the duplicate, original, and cost gates. For verified HI/AK, set USPS Priority on the eligible replacement before submission. Do not create a customer draft when that replacement succeeds unless separately requested. |
 | Label `unsent Gmail draft` | Draft branch | Every reason other than that exact halted reason. For verified HI/AK, when the shipment is still editable and not returned, select and verify USPS Priority first, then save the draft. **DRAFT ONLY — NEVER SEND.** |
-| `action_id` `draft_address_check`, or label `Draft address-check email` | Returned-shipment address check | Only when the return status is exactly `returned`. Re-read the return before drafting. Save the unsent draft below from `hello@runeastpeak.com`. Do not send it. Do not change the shipping service. |
+| `action_id` `draft_address_check`, or label `Draft an email to the customer`, or label `Draft address-check email` | Returned-shipment customer email | Only when the return status is exactly `returned`. Re-read the return before drafting. Save the unsent draft below from `hello@runeastpeak.com`. Do not send it. Do not change the shipping service. Then set the context line to `The draft email is in your inbox.` |
 
-`USPS Priority` is the only Hawaii/Alaska service option this skill defines. Show it as a button only when the verified destination state is HI or AK (or the unambiguous full name), the shipment is still editable, and the return status is not `returned`. Handed-off, returned, or otherwise uneditable HI/AK shipments are flagged in the order message and get no USPS Priority button. Do not add a FlavorCloud button or any other service button. Do not invent a button for clone, cancel, refund, or merge. The address-check button is the one draft button, and only for return status `returned`.
+`USPS Priority` is the only Hawaii/Alaska service option this skill defines. Show it as a button only when the verified destination state is HI or AK (or the unambiguous full name), the shipment is still editable, the processing status is not `en_route` or `packed`, and the return status is not `returned`. Handed-off, returned, or otherwise uneditable HI/AK shipments are flagged in the order message and get no USPS Priority button. Do not add a FlavorCloud button or any other service button. Do not invent a button for clone, cancel, refund, or merge. The customer-email button is the one draft button, and only for return status `returned`. Its label is `Draft an email to the customer.` Its `action_id` stays `draft_address_check`. Do not add a button that edits the address. The address-line section is a report. It is not an action label, and it does not change `ship_to`.
 
 A mapped reply is still not approval for a new charge. Unknown or uncovered fees stop for owner approval. Never charge the customer again.
 
@@ -45,13 +45,13 @@ Update `SKILL.md` and the references so the feedback is part of the skill, then 
 
 ## Button payload on the order message
 
-Post the order message with `chat.postMessage` when a bot token can send `blocks`. Otherwise use the markdown fallback in the blocks reference and do not invent a dead action button. `text` is the fallback. Put no street address, email, or phone in `text`, blocks, or `value`. Store id may be inside `value` and inside the ShipMonk URL. Do not print it as a field.
+Post the order message with the Block Kit poster, which calls `chat.postMessage`. Do not use Cursor's Send to Slack tool for this report. `text` is the fallback. Put no email or phone in `text`, blocks, or `value`. The order card omits the street. The address follow-up is the exception: it shows the before and after street lines and still has no email or phone. The card footer is `Store {store_id} · {status}`. Store id may also be inside `value` and inside the ShipMonk URL.
 
 `value` is a JSON string. `v` is `1`. `action` equals the `action_id`. `store_id` is `19002` or `18969`. `order_key` matches the order. Add `rma` only for `draft_address_check`. Add `shipment_id` only when the live record has a verified shipment id.
 
-The **View order in ShipMonk** control is a `url` button with `action_id` `view_order`. It does not map to a shipment action.
+The **View order in ShipMonk** control is a link. It does not map to a shipment action and it has no `action_id`.
 
-Include `usps_priority` only for an editable verified HI/AK shipment that is not returned. Include `draft_address_check` only when the return status is exactly `returned`. Do not include both. The card layout is in [the Slack blocks reference](slack-blocks.md).
+Include `usps_priority` only for an editable verified HI/AK shipment that is not returned, en route, or packed. Include `draft_address_check` only when the return status is exactly `returned` and no draft has been saved. Do not include both. The card layout is in [the Slack blocks reference](slack-blocks.md).
 
 ## Button payload the listener reads
 
@@ -93,7 +93,7 @@ Nested reply, when the client can set `thread_ts` to the order message:
 }
 ```
 
-`text` must be exactly `USPS Priority`, `guarded clone and submit`, `unsent Gmail draft`, or `Draft address-check email`.
+`text` must be exactly `USPS Priority`, `guarded clone and submit`, `unsent Gmail draft`, `Draft an email to the customer`, or `Draft address-check email`.
 
 Same-thread fallback, when the reply can only sit under the daily parent:
 
@@ -121,7 +121,7 @@ On `draft_address_check` only:
 3. The From account must be `hello@runeastpeak.com`. If that mailbox is not the one available, stop. Do not draft from another account.
 4. Search for an existing unsent draft for this order whose subject is the subject below. Update that draft in place. If a matching message was already sent, stop and report it. Do not send another.
 5. Save **DRAFT ONLY — NEVER SEND**. Read back the draft id, From, To, subject, body, and unsent state.
-6. Reply on that order message that the draft exists, labeled **DRAFT ONLY / unsent**, with the draft link when one exists. Do not include the address, email, or phone in that reply.
+6. Reply on that order message: `The draft email is in your inbox.` Include the draft link when one exists. Do not include the address, email, or phone. Do not say the draft was sent.
 
 Subject:
 

@@ -1,0 +1,42 @@
+{
+  "pacific_date": "2026-10-30",
+  "channel_id": "C0CCJJGG6HK",
+  "shipments": [
+    {
+      "order_number": "8376",
+      "store_id": "19002",
+      "order_key": "fixture-8376",
+      "order_status": "unfulfilled",
+      "processing_status": "unable_to_submit",
+      "flags": ["address"],
+      "state": "FL",
+      "country": "US",
+      "service": null,
+      "requested_service": "Standard",
+      "editable": true,
+      "return_status": null,
+      "email": "buyer-8376@example.com",
+      "phone": "555-0199",
+      "street1": "300 Example Ave",
+      "street2": "Guest: Tyler Maher, staying from 5th November - 11th November"
+    },
+    {
+      "order_number": "8257",
+      "store_id": "19002",
+      "order_key": "18927830040707",
+      "order_status": "fulfilled",
+      "processing_status": "en_route",
+      "flags": ["at_risk"],
+      "state": "HI",
+      "country": "US",
+      "service": "USPS Priority Mail",
+      "editable": true,
+      "return_status": "returned",
+      "rma": "712-884-506",
+      "email": "buyer-8257@example.com",
+      "phone": "555-0101",
+      "street1": "100 Example Ave",
+      "street2": "Apt 4"
+    }
+  ]
+}
