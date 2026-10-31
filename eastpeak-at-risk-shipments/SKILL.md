@@ -123,7 +123,9 @@ If several flags are true, list all of them under Action required and use the bl
 
 On every daily report, inspect `ship_to.street2` for each order whose `actions_required.address` flag is true. The app error `Address 2 exceeded limit of 50 characters` means that line is longer than 50 characters. On 2026-10-30, order 8376 (store `19002`, unfulfilled, `unable_to_submit`, ship-to state FL, requested service Standard) had `street2` of 61 characters. The line began with `Guest:` and the recipient name, then a comma and a 41-character remainder. The name is already stored on the order.
 
-Keep the street, email, and phone off the order card and off the follow-up. After the order card, post one separate reply in that order's thread. If the client cannot nest under the order message, post it under the daily parent and put the order number on the first line. Do not fold it into the parent or the card. On a later run the same day, update that follow-up instead of posting another. Do not write the address back to ShipMonk. The suggestion is not approval to change it.
+Keep the street off the order card. Keep email and phone off the card and off the follow-up. After the order card, post one separate reply in that order's thread. If the client cannot nest under the order message, post it under the daily parent and put the order number on the first line. Do not fold it into the parent or the card. On a later run the same day, update that follow-up instead of posting another. Do not write the address back to ShipMonk. The suggestion is not approval to change it.
+
+Every address-fix proposal shows the before and the after. Copy the live lines that would change. Label them `Before:` and `After:`. Do not describe the edit instead of showing both lines.
 
 State the field, the current length, the 50-character limit, and the smallest edit that fits. When line 2 is `Guest:` plus the recipient name and then a stay sentence, keep `Guest:` and the name and remove the stay sentence. Do not drop the guest name to keep the dates. Do not recommend a cut in the middle of a word, and do not drop a unit or street number. If another live validation message names a different field, report that field and its length the same way. Do not invent a character limit that was not verified.
 
@@ -133,7 +135,8 @@ Order 8376 follow-up:
 
 ```
 Order 8376. Address 2 is 61 characters. The limit is 50.
-Suggested fix: keep "Guest:" and the recipient name. Remove the stay dates.
+Before: Guest: Tyler Maher, staying from 5th November - 11th November
+After: Guest: Tyler Maher
 Do not change the address until this is approved.
 ```
 

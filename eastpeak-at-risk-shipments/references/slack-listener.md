@@ -45,7 +45,7 @@ Update `SKILL.md` and the references so the feedback is part of the skill, then 
 
 ## Button payload on the order message
 
-Post the order message with `chat.postMessage` when a bot token can send `blocks`. Otherwise use the markdown fallback in the blocks reference and do not invent a dead action button. `text` is the fallback. Put no street address, email, or phone in `text`, blocks, or `value`. Store id may be inside `value` and inside the ShipMonk URL. Do not print it as a field.
+Post the order message with `chat.postMessage` when a bot token can send `blocks`. Otherwise use the markdown fallback in the blocks reference and do not invent a dead action button. `text` is the fallback. Put no street address, email, or phone in the order card `text`, blocks, or `value`. The address-fix follow-up is the exception: it shows the before and after street lines. It still has no email or phone. Store id may be inside `value` and inside the ShipMonk URL. Do not print it as a field.
 
 `value` is a JSON string. `v` is `1`. `action` equals the `action_id`. `store_id` is `19002` or `18969`. `order_key` matches the order. Add `rma` only for `draft_address_check`. Add `shipment_id` only when the live record has a verified shipment id.
 
