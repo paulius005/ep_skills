@@ -176,7 +176,10 @@ class ListenerTests(unittest.TestCase):
             thread_ts=None,
         )
         channel_message.pop("thread_ts")
-        self.assertIsNone(classify(channel_message, bot_user_id=BOT_USER)["action"])
+        # No order thread, so this is not a shipment action. It is still a reply.
+        unbound = classify(channel_message, bot_user_id=BOT_USER)
+        self.assertEqual(unbound["action"], "conversation")
+        self.assertEqual(unbound["label"], "USPS Priority")
 
         mentioned = classify(
             human_reply(f"<@{BOT_USER}> USPS Priority"),
@@ -205,6 +208,32 @@ class ListenerTests(unittest.TestCase):
             bot_user_id=BOT_USER,
         )
         self.assertEqual(self_mention["reason"], "bot")
+
+    def test_a_question_is_a_conversation_and_does_not_post_a_stock_line(self):
+        question = human_reply(
+            f"<@{BOT_USER}>  for 8257 can you show me the draft?",
+            thread_ts=PARENT_TS,
+        )
+        decision = classify(question, bot_user_id=BOT_USER)
+        self.assertEqual(decision["action"], "conversation")
+        self.assertEqual(decision["label"], "for 8257 can you show me the draft?")
+        self.assertEqual(decision["thread_ts"], PARENT_TS)
+        self.assertEqual(decision["reason"], "conversation")
+
+        calls = []
+
+        def transport(method, body):
+            calls.append(method)
+            raise AssertionError(method)
+
+        result = listen(question, bot_user_id=BOT_USER, transport=transport, post=True)
+        self.assertEqual(result["action"], "conversation")
+        self.assertFalse(result["posted"])
+        self.assertEqual(calls, [])
+
+        blank = classify(human_reply(f"<@{BOT_USER}>"), bot_user_id=BOT_USER)
+        self.assertIsNone(blank["action"])
+        self.assertEqual(blank["reason"], "not_an_action")
 
     def test_reply_posts_as_the_same_app_and_does_not_print_the_token(self):
         token = "xoxb-listener-test-value"
