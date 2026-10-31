@@ -2,7 +2,7 @@
 
 Use this when a Slack reply on an at-risk order message is the trigger. The daily parent and the order message are reports. They do not change a shipment. The listener reads one reply, maps it to one existing action, applies the decision tree in [the skill](../SKILL.md), and updates that ShipMonk shipment only when the tree allows the update.
 
-Read [the incident record](incident-record.md) and take the exclusive claim before any mutation. Re-read the live order immediately before writing. ShipMonk calls use the skill's API rules: curl or a non-Python-urllib client, store `19830`, secret `SHIPMONK_API_KEY` never printed.
+Read [the incident record](incident-record.md) and take the exclusive claim before any mutation. Re-read the live order immediately before writing. ShipMonk calls use the skill's API rules: curl or a non-Python-urllib client, East Peak store `19002` or Manual Store `18969`, secret `SHIPMONK_API_KEY` never printed. The order must be on the Action Required alert.
 
 ## What the listener accepts
 
@@ -62,7 +62,7 @@ Post the order message with `chat.postMessage` (or the equivalent) as a reply on
           "type": "button",
           "action_id": "usps_priority",
           "text": { "type": "plain_text", "text": "USPS Priority", "emoji": false },
-          "value": "{\"v\":1,\"action\":\"usps_priority\",\"store_id\":\"19830\",\"order_key\":\"<order_key>\"}"
+          "value": "{\"v\":1,\"action\":\"usps_priority\",\"store_id\":\"<19002 or 18969>\",\"order_key\":\"<order_key>\"}"
         }
       ]
     }
@@ -74,7 +74,7 @@ Add `"shipment_id":"<id>"` inside `value` only when the live record has a verifi
 
 ## Button payload the listener reads
 
-Slack delivers the click as `block_actions`. The listener requires `type`, `channel.id`, `message.ts`, `message.thread_ts`, `actions[0].action_id`, and `actions[0].value`. Ignore other fields. `value` must parse as the JSON object above, with `v` equal to `1` and `action` equal to `usps_priority`. `store_id` must be `19830`. `order_key` must match the order message. Then re-read that order and apply the table.
+Slack delivers the click as `block_actions`. The listener requires `type`, `channel.id`, `message.ts`, `message.thread_ts`, `actions[0].action_id`, and `actions[0].value`. Ignore other fields. `value` must parse as the JSON object above, with `v` equal to `1` and `action` equal to `usps_priority`. `store_id` must be `19002` or `18969`, matching the order. `order_key` must match the order message. Then re-read that order and apply the table.
 
 ```json
 {
@@ -89,7 +89,7 @@ Slack delivers the click as `block_actions`. The listener requires `type`, `chan
       "type": "button",
       "action_id": "usps_priority",
       "block_id": "hialaska-actions",
-      "value": "{\"v\":1,\"action\":\"usps_priority\",\"store_id\":\"19830\",\"order_key\":\"<order_key>\"}"
+      "value": "{\"v\":1,\"action\":\"usps_priority\",\"store_id\":\"<19002 or 18969>\",\"order_key\":\"<order_key>\"}"
     }
   ]
 }
