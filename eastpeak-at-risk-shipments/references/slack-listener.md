@@ -121,7 +121,7 @@ On `draft_address_check` only:
 3. The From account must be `hello@runeastpeak.com`. If that mailbox is not the one available, stop. Do not draft from another account.
 4. Search for an existing unsent draft for this order whose subject is the subject below. Update that draft in place. If a matching message was already sent, stop and report it. Do not send another.
 5. Save **DRAFT ONLY — NEVER SEND**. Read back the draft id, From, To, subject, body, and unsent state.
-6. Reply on that order message that the draft exists, labeled **DRAFT ONLY / unsent**, with the draft link when one exists. Do not include the address, email, or phone in that reply.
+6. Reply on that order message. If the draft was saved and read back, say `The draft email is in your inbox. It is not sent.` Label it **DRAFT ONLY / unsent** and include the draft id. Add the draft link when one exists. If the draft was not saved, say that and give the blocker. Do not use the inbox sentence unless the readback succeeded. Do not include the address, email, or phone in that reply. Do not say the email was sent. The card uses `Draft an email to the customer. Ask them to check the address.` only when no unsent draft is saved. That line is a suggestion.
 
 Subject:
 

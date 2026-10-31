@@ -89,37 +89,59 @@ Post the Block Kit card in [the Slack blocks reference](references/slack-blocks.
 
 Every card includes order number, order status, processing status, every true `actions_required` flag, destination state (and country when it is not the US), current shipping service, and a **View order in ShipMonk** link button. Add *Return* when the order has a return. Add *Draft* when an unsent draft exists, labeled DRAFT ONLY / unsent. If no service is set, say that and the requested service. Skip a field only when it does not apply.
 
-Write status words like "Fulfilled" and "En route", not raw keys. The context line states what was done or the one suggested next step. Do not add a boilerplate footer such as "no shipment change in this run."
+Write status words like "Fulfilled" and "En route", not raw keys. The context line is the instruction for the person who reads the card. Write it in Caterpillar English:
 
-When the sender accepts only markdown, use the same fields in the same order, one labeled line each, and make the order link the words "View order in ShipMonk". Do not invent a button that is not in the payload.
+- Each sentence has 20 words or fewer.
+- Each sentence has one action.
+- Start a requested action with a verb.
+- Use the draft sentences below every time. Do not paraphrase them.
+
+Do not add a boilerplate footer such as "no shipment change in this run." A status-only line such as "Service left unchanged" is not an instruction.
+
+Before you write the line, search `hello@runeastpeak.com` for an unsent draft for this order. Do not send mail.
+
+**Draft email.** Use one of these lines, not both.
+
+- A verified unsent draft exists: `The draft email is in your inbox. It is not sent.`
+- No draft exists, and the person should write to the customer: `Draft an email to the customer.`
+
+"Your inbox" is the `hello@runeastpeak.com` drafts folder. The second line is a suggestion. It is not a saved draft. When the purpose is known, add one short sentence:
+
+- Returned shipment: `Ask them to check the address.`
+- The order may be late: `Tell them if the order will be late.`
+
+Keep the button label `Draft address-check email` unchanged. The listener matches that exact label. Do not put that label on the context line. Do not say the email was sent.
+
+When the sender accepts only markdown, use the same fields in the same order, one labeled line each, and make the order link the words "View order in ShipMonk". Do not invent a button that is not in the payload. Use the same context line. Do not append the button label as the instruction.
 
 **Built-in action.** If a built-in action applies, put that control in the reply and do not replace it with a different suggestion. The controls and their gates are in [the Slack listener reference](references/slack-listener.md).
 
 - Return stage exactly `returned`: the **Draft address-check email** button. This wins over the USPS Priority button. The click saves an unsent draft from `hello@runeastpeak.com`. It does not send mail.
 - Verified editable Hawaii or Alaska, and not returned: the USPS Priority button. Do not use FlavorCloud. Do not add that button, and do not describe the order as rerouted, when it is already en route, packed, returned, or otherwise not editable.
 
-A **View order in ShipMonk** button is a URL button and does not need a click handler. **Draft address-check email** and **USPS Priority** are `action_id` buttons. Post them only when the sender can deliver Block Kit actions and a click reaches an agent that can run [the Slack listener](references/slack-listener.md). If it cannot, leave those buttons off and put the same words on the context line. Do not post a button that does nothing.
+A **View order in ShipMonk** button is a URL button and does not need a click handler. **Draft address-check email** and **USPS Priority** are `action_id` buttons. Post them only when the sender can deliver Block Kit actions and a click reaches an agent that can run [the Slack listener](references/slack-listener.md). If it cannot, leave those buttons off. The context line is the instruction. Do not post a button that does nothing. Do not replace the context line with the button label.
 
 **No built-in action.** When no action button applies, the context line is one suggested step. Phrase it as a suggestion, not as work already done. A suggestion in Slack is not authorization to perform it. Use the flag that blocks fulfillment:
 
-- `address`: correct the address so ShipMonk can submit it.
-- `item_mapping`: map the unmapped items to products.
-- `shipping_mapping`: choose a real carrier service for the requested method. An editable Hawaii or Alaska order uses the built-in USPS Priority action instead.
-- `customs`: fill in the missing customs details.
-- `hs_code`: add the missing HS codes.
-- `routing` or `pending_b2b_routing`: add the missing routing instructions.
-- `freight_quote`: choose a freight quote.
-- `freight_info`: add the freight details needed for a quote.
-- `ship_short`: decide whether to ship short or wait for the missing units.
-- `global_e_label`: get the missing Global-e label.
-- `automation_rule`: open the order and clear the automation-rule hold.
-- `value_added_service_problem`: fix the value-added service, or change the order if it cannot be done.
-- `at_risk`, and the order is still editable and is not Hawaii or Alaska: check whether it can still make the ship-by date. Treat a faster service as a suggestion until someone approves the change.
-- `at_risk`, and the order is already packed, en route, or otherwise not editable: leave the service alone. Check tracking and tell the customer if it will miss the date. If the return stage is `returned`, use the address-check button instead of this suggestion.
+- `address`: Correct the address. Then ShipMonk can submit the order.
+- `item_mapping`: Map each item to a product.
+- `shipping_mapping`: Choose a carrier service for this order. An editable Hawaii or Alaska order uses the built-in USPS Priority action instead.
+- `customs`: Add the customs details.
+- `hs_code`: Add the HS codes.
+- `routing` or `pending_b2b_routing`: Add the routing instructions.
+- `freight_quote`: Choose a freight quote.
+- `freight_info`: Add the freight details.
+- `ship_short`: Ship the units you have. Or wait for the missing units.
+- `global_e_label`: Get the Global-e label.
+- `automation_rule`: Open the order. Clear the automation-rule hold.
+- `value_added_service_problem`: Fix the value-added service. If you cannot fix it, change the order.
+- `at_risk`, and the order is still editable and is not Hawaii or Alaska: Check the ship-by date. A faster service needs approval.
+- `at_risk`, and the order is already packed, en route, or otherwise not editable, and the return status is not `returned`: Do not change the service. Check the tracking. Draft an email to the customer if the order will be late.
+- `at_risk` with return status `returned`: use the draft email lines above. Do not use the tracking line.
 
 If several flags are true, list all of them under Action required and use the blocking one for the context line or action button. If the order is not editable, do not suggest changing the address, the service, or the items.
 
-The 8257 card below is the shape. Its Draft address-check button is the control, not a claim that a draft was saved. Full JSON is in the blocks reference.
+The 8257 card below is the shape when the return status is `returned` and no draft is saved yet. The button is the control. The context line is the suggestion. The button is not a claim that a draft was saved. Full JSON is in the blocks reference.
 
 ```
 *Order #8257*
@@ -129,8 +151,14 @@ The 8257 card below is the shape. Its Draft address-check button is the control,
 *Action required:* At risk
 *Ship to:* Hawaii
 *Service:* USPS Priority Mail
-Already en route. Service left unchanged.
+Draft an email to the customer. Ask them to check the address.
 [Draft address-check email] [View order in ShipMonk]
+```
+
+When that draft is saved and read back, use this context line instead. Add *Draft:* DRAFT ONLY / unsent. Leave the service unchanged. Do not say the email was sent.
+
+```
+The draft email is in your inbox. It is not sent.
 ```
 
 ## Verification, completion and restrictions

@@ -34,7 +34,7 @@ Plain words, not raw status keys. Omit a field object when it does not apply. A 
       "elements": [
         {
           "type": "mrkdwn",
-          "text": "Already en route. Service left unchanged."
+          "text": "Draft an email to the customer. Ask them to check the address."
         }
       ]
     },
@@ -61,6 +61,13 @@ Plain words, not raw status keys. Omit a field object when it does not apply. A 
 ```
 
 `Return` is present because this order's return status is `returned` even though processing is still en route. Drop that field when there is no return.
+
+The context line is the human instruction. Use the Caterpillar English rules in the skill. For a returned order, use one of these:
+
+- No verified draft: `Draft an email to the customer. Ask them to check the address.`
+- Verified unsent draft: `The draft email is in your inbox. It is not sent.`
+
+Do not write `Already en route. Service left unchanged.` Do not put the button label on the context line. The example above is the no-draft shape. After a saved draft, switch to the inbox line and add the Draft field. Do not say the email was sent.
 
 `Service` is "Not set (requested Standard)" when ShipMonk has not resolved a method.
 
@@ -90,6 +97,6 @@ Use this only when the sender cannot post `blocks`. Same facts, no fake buttons.
 *Action required:* At risk
 *Ship to:* Hawaii
 *Service:* USPS Priority Mail
-Already en route. Service left unchanged.
+Draft an email to the customer. Ask them to check the address.
 <https://app.shipmonk.com/orders/lookup/19002/18927830040707|View order in ShipMonk>
 ```
