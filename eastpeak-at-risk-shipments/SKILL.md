@@ -66,7 +66,9 @@ A reply maps to an existing action only:
 - Reply text **`guarded clone and submit`**: the replacement branch, and only when the exact live reason is `halted awaiting carrier processing`. Clone and submit only after the duplicate, original, and cost gates. For HI/AK, set USPS Priority on the eligible replacement before submission. Do not create a customer draft for a successful halted replacement unless separately requested.
 - Reply text **`unsent Gmail draft`**: the draft branch for every reason other than that exact halted reason. If the destination is verified HI/AK and the shipment is still editable, select and verify USPS Priority first, then save the draft. **DRAFT ONLY — NEVER SEND.**
 
-Any other reply maps to no action. Record it on that order message and do not update the shipment. Do not invent an action from free text. Do not auto-merge orders, shipments, incidents, or Slack messages. One reply applies to the one order message it names. A reply is not owner approval for a new charge; the cost gate still applies.
+Any other reply maps to no shipment action. Record it on that order message and do not update the shipment, unless it is skill feedback as defined below. Do not invent a shipment action from free text. Do not auto-merge orders, shipments, incidents, or Slack messages. One shipment reply applies to the one order message it names. A reply is not owner approval for a new charge; the cost gate still applies.
+
+A reply in `#at-risk-shipments` that asks to change this skill is skill feedback, not a shipment action. Do not map it to USPS Priority, the replacement branch, or a Gmail draft, and do not update the ShipMonk shipment from it. Incorporate that feedback into this skill and its references, add the change to the repo, and commit it. Do not merge the pull request unless the user asks. Never commit or print `SHIPMONK_API_KEY`. Do not apply feedback that would send customer email, use FlavorCloud, skip the halted-reason gates, or invent a shipment action; record that reply and leave the skill unchanged.
 
 ## ShipMonk API
 

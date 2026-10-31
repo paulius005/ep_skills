@@ -30,6 +30,12 @@ Match the button `action_id` or the exact action label. Do not paraphrase. Slack
 
 A mapped reply is still not approval for a new charge. Unknown or uncovered fees stop for owner approval. Never charge the customer again.
 
+## Skill feedback
+
+A reply in this channel that asks to change the skill is skill feedback. It is not one of the action labels above. Do not update the ShipMonk shipment from it, and do not auto-merge orders or shipments because of it.
+
+Update `SKILL.md` and the references so the feedback is part of the skill, then add those files to the repo and commit. Leave the pull request unmerged unless the user asks to merge. Never commit or print the API key. If the feedback would send customer email, use FlavorCloud, skip the halted-reason gates, or invent a shipment action, record the reply and do not change the skill.
+
 ## Button payload on the order message
 
 Post the order message with `chat.postMessage` (or the equivalent) as a reply on the daily parent. Include the button only for an editable verified HI/AK shipment. `text` is the fallback. Put no street address, email, or phone in `text`, blocks, or `value`.
