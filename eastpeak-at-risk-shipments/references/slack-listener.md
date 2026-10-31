@@ -150,14 +150,14 @@ On `draft_address_check` only:
 1. Re-read the return. If the status is no longer exactly `returned`, stop and say so. Do not draft from a stale button.
 2. Re-read the order. The recipient is `customer_email` when the ship-to email is empty. If both are present and differ, or neither is present, stop and ask which address to use. Never guess.
 3. The From account must be `hello@runeastpeak.com`. If that mailbox is not the one available, stop. Do not draft from another account.
-4. Search for an existing unsent draft for this order whose subject is the subject below, or the older subject `Can you double-check the address for order {order_number}?`. Update that draft in place, including the subject. If a matching message was already sent, stop and report it. Do not send another. There is no separate support-agent language guide in this repo. Use the subject and body below. Say `was returned to sender`. Be direct. One human ask. Do not use `came back to us` or `If that's right, reply and let us know. If it isn't, reply with the corrected address.`
+4. Search for an existing unsent draft for this order whose subject is the subject below, or an older subject `shipping issue with order: #{order_number}` or `Can you double-check the address for order {order_number}?`. Update that draft in place, including the subject. If a matching message was already sent, stop and report it. Do not send another. Use the subject and body below. Capitalize the subject. Keep the note warm, natural, and short. Say the order was returned and acknowledge the hassle. Do not write `We have not shipped it again.` Include the ship-to address and one next step: confirm it or send a correction. Use only verified facts. Do not guess a return reason or promise a ship date. Include `{returned_date}` only when the return record has that date.
 5. Save **DRAFT ONLY — NEVER SEND**. Read back the draft id, From, To, subject, body, and unsent state.
 6. Reply on that order message: `The draft email is in your inbox.` Include the draft link when one exists. Do not include the address, email, or phone. Do not say the draft was sent.
 
 Subject:
 
 ```
-shipping issue with order: #{order_number}
+Address Confirmation for Your East Peak Order #{order_number}
 ```
 
 Body:
@@ -165,20 +165,21 @@ Body:
 ```
 Hi {first_name},
 
-Your East Peak order {order_number} was returned to sender on {returned_date}. We have not shipped it again.
+Your East Peak order #{order_number} was returned to us on {returned_date}. Sorry for the hassle—we'd love to help get this sorted.
 
-Please check the address we have on file:
+Could you confirm that the shipping address below is correct?
 
 {street1}
 {street2 line only when present}
 {city}, {state} {zip}
 
-If that address is right, just reply to this email. If something needs to change, send the corrected address and we will update it before we ship again.
+If everything looks right, just reply to confirm. If anything needs updating, send us the correct address so we can work out the next steps.
 
-Thanks,
+Thanks for your help!
+
 East Peak
 ```
 
-Use the first name from the verified recipient. If it cannot be split safely, open with "Hi there,". `{returned_date}` is the return's received date in `America/Los_Angeles`, written as a calendar date. The address lines are the order's current ship-to, copied exactly. Do not claim the address failed validation, and do not invent a carrier reason. The known return reason may be unknown.
+Use the first name from the verified recipient. If it cannot be split safely, open with "Hi there,". `{returned_date}` is the return's received date in `America/Los_Angeles`, written as a calendar date. When the return record has no date, write `was returned to us` with no `on` clause. The address lines are the order's current ship-to, copied exactly. Do not claim the address failed validation, and do not invent a carrier reason. The known return reason may be unknown.
 
 A saved draft is waiting for a person to review it. It does not reship the order and it does not clear the alert.
