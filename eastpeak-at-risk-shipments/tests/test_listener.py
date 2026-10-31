@@ -356,8 +356,34 @@ class ListenerTests(unittest.TestCase):
         result = json.loads(completed.stdout)
         self.assertFalse(result["posted"])
         self.assertIsNone(result["action"])
-        self.assertEqual(result["reason"], "not_an_action")
+        self.assertEqual(result["reason"], "conversation")
+        self.assertEqual(result["thread_ts"], PARENT_TS)
         self.assertEqual(completed.stderr, "")
+
+    def test_free_text_mention_is_a_conversation_and_does_not_stock_post(self):
+        decision = classify(
+            human_reply(f"<@{BOT_USER}> can you show me the draft for 8257?"),
+            bot_user_id=BOT_USER,
+        )
+        self.assertIsNone(decision["action"])
+        self.assertEqual(decision["reason"], "conversation")
+        self.assertEqual(decision["thread_ts"], ORDER_TS)
+
+        transport_calls = []
+
+        def transport(method, body):
+            transport_calls.append(method)
+            return {"ok": True, "ts": "1700000000.000900"}
+
+        result = listen(
+            human_reply(f"<@{BOT_USER}> please change the wording"),
+            bot_user_id=BOT_USER,
+            transport=transport,
+            post=True,
+        )
+        self.assertEqual(result["reason"], "conversation")
+        self.assertFalse(result["posted"])
+        self.assertEqual(transport_calls, [])
 
 
 if __name__ == "__main__":

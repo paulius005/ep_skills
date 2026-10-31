@@ -1,6 +1,6 @@
 # Slack listener contract
 
-Use this when a Slack reply on an at-risk order message is the trigger. Do not reply to East Peak Operations, and only act on a human reply that names an allowed action.
+Use this when a Slack reply on an at-risk order message is the trigger. Do not reply to East Peak Operations. Shipment changes use the fixed labels below. Any other human @mention gets a flexible reply and does not, by itself, change a shipment.
 
 The listener posts as **East Peak Operations**, the same Slack app that posts the cards. The bot token is the secret `SLACK_BOT_TOKEN`. Do not create a second bot. Never print, log, or commit the token. When that token is present, resolve the bot user id with `auth.test` before deciding who spoke. The token stays on the Authorization header.
 
@@ -27,9 +27,9 @@ An action input names **one** order message, comes from a person, and is not one
 2. A message event whose `channel` is `C0CCJJGG6HK`, whose `thread_ts` is that order message's `ts`, and whose text @mentions East Peak Operations. After the mention is removed, the remaining text is exactly one action label below.
 3. When the Slack client can only post inside the daily thread, a message whose `thread_ts` is the day's parent, which @mentions East Peak Operations, and whose text after the mention is exactly `<order message ts>` plus one space plus one action label below. The first remaining token must equal the order message `ts`. The remainder must equal the label, with no extra words.
 
-A channel message or thread reply with no @mention does not map, even when the words are an allowed action.
+A channel message or thread reply with no @mention does not map, even when the words are an allowed action. Stay silent.
 
-If the event names zero order messages, or more than one, record it and stop. Do not pick a shipment. Do not auto-merge orders, shipments, incidents, or Slack messages. Do not fold the reply or the result into the parent. One reply updates at most the one shipment that order message already identified.
+A shipment change that names zero orders, or more than one, does not pick a shipment. Ask which order. Do not auto-merge orders, shipments, incidents, or Slack messages. One fixed shipment reply updates at most the one order it names. A question, a request to see a draft, or a request to change the skill still gets a flexible reply when it @mentions East Peak Operations, including when it names no order.
 
 ## Return stage
 
@@ -37,7 +37,7 @@ Do not treat `processing_status` as the shipment stage when the order lists any 
 
 ## How a reply maps to an action
 
-Match the button `action_id` or the exact action label. Do not paraphrase. Slack text does not establish the halted reason; the live ShipMonk reason does. An unmapped reply is recorded on that order message and does not update the shipment.
+Match the button `action_id` or the exact action label. Do not paraphrase a shipment change. Slack text does not establish the halted reason; the live ShipMonk reason does. A human @mention that matches none of these labels is `reason: conversation`. It does not update the shipment. The agent still answers it. `posted: false` from `--no-post` means the stock line was not sent. Silence is only for no mention, the bot, a report post, or the wrong channel.
 
 | Reply | Existing action | What the tree then does |
 | --- | --- | --- |
@@ -56,9 +56,11 @@ When a person asks what is wrong with an address, or asks how to correct it befo
 
 ## Skill feedback
 
-A reply in this channel that asks to change the skill is skill feedback. It is not one of the action labels above. Do not update the ShipMonk shipment from it, and do not auto-merge orders or shipments because of it.
+A reply in this channel that asks to change the skill is skill feedback. It is not one of the fixed shipment labels above. Do not update the ShipMonk shipment from the feedback alone, and do not auto-merge orders or shipments because of it. If the same message also asks for one named order's fixed draft or shipment action, do that fixed action too.
 
-Update `SKILL.md` and the references so the feedback is part of the skill, then add those files to the repo and commit. Leave the pull request unmerged unless the user asks to merge. Never commit or print the API key. If the feedback would send customer email, use FlavorCloud, skip the halted-reason gates, or invent a shipment action, record the reply and do not change the skill.
+Update `SKILL.md` and the references so the feedback is part of the skill, then add those files to the repo and commit. Leave the pull request unmerged unless the user asks to merge. Never commit or print the API key. If the feedback would send customer email, use FlavorCloud, skip the halted-reason gates, or invent a shipment action, record the reply and leave the skill unchanged.
+
+The fixed reply list and the flexible human reply live in [Reply baseline](../SKILL.md#reply-baseline). If an automation prompt still names the old returned-order subject `Can you double-check the address for order {order_number}?`, or treats an unmatched @mention as silence, follow the skill. The prompt should be changed to the current subject `shipping issue with order: #{order_number}` and to a reply on every human @mention.
 
 The daily report posts an Address line 2 suggestion as its own reply under the daily parent. That reply is a report, not an action label. Do not map it to a shipment action, and do not edit the address because that reply exists. Changing the address remains outside this listener. The report only suggests the fix, as specified in the skill.
 
@@ -127,7 +129,7 @@ Same-thread fallback, when the reply can only sit under the daily parent:
 }
 ```
 
-The same other labels may replace `USPS Priority` in that text. Nothing else maps. A bot-authored copy of either payload does not map.
+The same other labels may replace `USPS Priority` in that text. Nothing else maps to a shipment action. Any other human @mention is a conversation. A bot-authored copy of either payload does not map.
 
 After a mapped action, post the verified result or the exact blocker as a further reply tied to that order message. Post that reply with `chat.postMessage` as East Peak Operations, using `SLACK_BOT_TOKEN`. Do not set a different `username`. Do not edit the parent. Do not mark the shipment resolved because the reply was posted. Do not answer the bot's own follow-up.
 

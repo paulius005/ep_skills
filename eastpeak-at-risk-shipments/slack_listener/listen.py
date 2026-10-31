@@ -56,7 +56,13 @@ def classify(event: dict, bot_user_id: str | None = None) -> dict:
         return _decision(reason="no_mention")
     mapped = _map_label(message.get("text") or "", message.get("thread_ts"))
     if mapped is None:
-        return _decision(reason="not_an_action")
+        # A human @mention that is not a fixed label still needs a reply.
+        # The stock listener does not post it. action stays empty so a
+        # later post=True call cannot send the fixed "Accepted …" line.
+        return _decision(
+            reason="conversation",
+            thread_ts=str(message["thread_ts"]) if message.get("thread_ts") else None,
+        )
     action, label, order_ts = mapped
     return _decision(
         action=action,
