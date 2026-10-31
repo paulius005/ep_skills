@@ -2,7 +2,9 @@
 
 Use this when a Slack reply on an at-risk order message is the trigger. Do not reply to East Peak Operations, and only act on a human reply that names an allowed action.
 
-The listener posts as **East Peak Operations**, the same Slack app that posts the cards. The bot token is the secret `SLACK_BOT_TOKEN`. Do not create a second bot. Never print, log, or commit the token. When that token is present, resolve the bot user id with `auth.test` before deciding who spoke. The token stays on the Authorization header.
+If the incoming message does not @mention East Peak Operations, stop with no Slack message. Do not post "No changes made". Do not explain order-message timestamps. Do not use Cursor's Send to Slack tool. A reply is posted only through `slack_poster.post_thread_reply` with the secret `SLACK_BOT_TOKEN` (`chat.postMessage`). Slack then shows East Peak Operations.
+
+The listener posts as **East Peak Operations**, the same Slack app that posts the cards. The bot token is the secret `SLACK_BOT_TOKEN`. Do not create a second bot. Never print, log, or commit the token. When that token is present, resolve the bot user id with `auth.test` before deciding who spoke. The token stays on the Authorization header. Do not set `username` on the reply.
 
 Ignore all of the following. None of them is a human action, and the listener does not reply to them:
 
@@ -27,9 +29,9 @@ An action input names **one** order message, comes from a person, and is not one
 2. A message event whose `channel` is `C0CCJJGG6HK`, whose `thread_ts` is that order message's `ts`, and whose text @mentions East Peak Operations. After the mention is removed, the remaining text is exactly one action label below.
 3. When the Slack client can only post inside the daily thread, a message whose `thread_ts` is the day's parent, which @mentions East Peak Operations, and whose text after the mention is exactly `<order message ts>` plus one space plus one action label below. The first remaining token must equal the order message `ts`. The remainder must equal the label, with no extra words.
 
-A channel message or thread reply with no @mention does not map, even when the words are an allowed action.
+A channel message or thread reply with no @mention does not map, even when the words are an allowed action. That includes the daily parent (`At-risk shipments · Oct 31`, including ts `1793481649.569669` and any later parent the same day). Produce no Slack reply at all.
 
-If the event names zero order messages, or more than one, record it and stop. Do not pick a shipment. Do not auto-merge orders, shipments, incidents, or Slack messages. Do not fold the reply or the result into the parent. One reply updates at most the one shipment that order message already identified.
+If the event names zero order messages, or more than one, stop with no Slack message. Do not pick a shipment. Do not auto-merge orders, shipments, incidents, or Slack messages. Do not fold the reply or the result into the parent. One reply updates at most the one shipment that order message already identified.
 
 ## Return stage
 
@@ -37,7 +39,7 @@ Do not treat `processing_status` as the shipment stage when the order lists any 
 
 ## How a reply maps to an action
 
-Match the button `action_id` or the exact action label. Do not paraphrase. Slack text does not establish the halted reason; the live ShipMonk reason does. An unmapped reply is recorded on that order message and does not update the shipment.
+Match the button `action_id` or the exact action label. Do not paraphrase. Slack text does not establish the halted reason; the live ShipMonk reason does. An unmapped reply does not update the shipment and does not get a Slack reply.
 
 | Reply | Existing action | What the tree then does |
 | --- | --- | --- |
@@ -129,7 +131,7 @@ Same-thread fallback, when the reply can only sit under the daily parent:
 
 The same other labels may replace `USPS Priority` in that text. Nothing else maps. A bot-authored copy of either payload does not map.
 
-After a mapped action, post the verified result or the exact blocker as a further reply tied to that order message. Post that reply with `chat.postMessage` as East Peak Operations, using `SLACK_BOT_TOKEN`. Do not set a different `username`. Do not edit the parent. Do not mark the shipment resolved because the reply was posted. Do not answer the bot's own follow-up.
+After a mapped action, post the verified result or the exact blocker as a further reply tied to that order message. Post that reply with `slack_poster.post_thread_reply` (`chat.postMessage`) as East Peak Operations, using `SLACK_BOT_TOKEN`. Do not use Cursor's Send to Slack tool. Do not set a different `username`. Do not edit the parent. Do not mark the shipment resolved because the reply was posted. Do not answer the bot's own follow-up. A message with no @mention produces no reply.
 
 ## Draft address-check email
 

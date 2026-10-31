@@ -1,7 +1,7 @@
 """Block Kit poster for the East Peak at-risk shipment report."""
 
 from .blocks import Report, Shipment, plan_messages, report_from_dict
-from .post import TOKEN_ENV, post_report
+from .post import TOKEN_ENV, post_report, post_thread_reply
 
 __all__ = [
     "Report",
@@ -9,5 +9,6 @@ __all__ = [
     "TOKEN_ENV",
     "plan_messages",
     "post_report",
+    "post_thread_reply",
     "report_from_dict",
 ]
