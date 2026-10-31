@@ -208,6 +208,35 @@ def _context(text: str) -> dict:
     return {"type": "context", "elements": [{"type": "mrkdwn", "text": text}]}
 
 
+def conversation_blocks(
+    lead: str,
+    lines: list[str] | None = None,
+    note: str | None = None,
+) -> tuple[str, list]:
+    """Block Kit for a human reply: a bold lead, bullet lines, and a short note.
+
+    The note is the context line and must be 75 characters or fewer.
+    Email, phone, and street stay out unless the caller is quoting a draft
+    the person asked to see. This function does not post.
+    """
+    lead = " ".join((lead or "").replace("*", "").split())
+    if not lead:
+        raise ValueError("lead is required")
+    cleaned = []
+    for line in lines or []:
+        item = " ".join(str(line).lstrip("•*- ").split())
+        if item:
+            cleaned.append(item)
+    blocks = [_section(f"*{lead}*")]
+    if cleaned:
+        blocks.append(_section("\n".join(f"• {item}" for item in cleaned)))
+    if note:
+        note = " ".join(note.split())
+        blocks.append(_context(note))
+    text = "\n".join([lead, *cleaned, *([note] if note else [])])
+    return text, blocks
+
+
 def _scrub(text: str, shipment: Shipment) -> str:
     for hidden in (shipment.email, shipment.phone, shipment.street1):
         if hidden and hidden in text:

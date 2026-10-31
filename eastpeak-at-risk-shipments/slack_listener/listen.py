@@ -1,9 +1,10 @@
 """Map a Slack reply to one skill action, and never answer the bot.
 
 East Peak Operations posts the daily parent and the order cards. Those posts
-are not human actions. A human reply counts only when it @mentions that same
-app and names an allowed action. Replies, when sent, use SLACK_BOT_TOKEN.
-This module does not call ShipMonk and does not print the token.
+are not human actions. A human @mention is either an exact shipment action or
+a conversation. Conversations are classified and not given a stock reply.
+Replies, when sent, use SLACK_BOT_TOKEN. This module does not call ShipMonk
+and does not print the token.
 """
 
 from __future__ import annotations
@@ -56,7 +57,7 @@ def classify(event: dict, bot_user_id: str | None = None) -> dict:
         return _decision(reason="no_mention")
     mapped = _map_label(message.get("text") or "", message.get("thread_ts"))
     if mapped is None:
-        return _decision(reason="not_an_action")
+        return _conversation(message)
     action, label, order_ts = mapped
     return _decision(
         action=action,
@@ -87,9 +88,14 @@ def listen(
     decision = classify(event, bot_user_id=bot_user_id)
     result = dict(decision)
     result["posted"] = False
-    # No mapped action means no Slack call. A missing @mention, a bot post,
-    # and a parent card all land here. Do not explain that in the channel.
-    if not post or not decision["action"] or not decision.get("thread_ts"):
+    # A conversation is answered with conversation_blocks, not this stock line.
+    # A missing @mention, a bot post, and a parent card have no action.
+    if (
+        not post
+        or not decision["action"]
+        or decision["action"] == "conversation"
+        or not decision.get("thread_ts")
+    ):
         return result
     posted = post_thread_reply(
         channel_id=CHANNEL_ID,
@@ -215,6 +221,21 @@ def _iter_mentions(value):
     if isinstance(value, list):
         for item in value:
             yield from _iter_mentions(item)
+
+
+def _conversation(message: dict) -> dict:
+    cleaned = " ".join(MENTION_RE.sub(" ", message.get("text") or "").split())
+    if not cleaned:
+        return _decision(reason="not_an_action")
+    thread_ts = message.get("thread_ts")
+    thread_ts = str(thread_ts) if thread_ts else None
+    return _decision(
+        action="conversation",
+        label=cleaned,
+        order_ts=thread_ts,
+        thread_ts=thread_ts,
+        reason="conversation",
+    )
 
 
 def _map_label(text: str, thread_ts: str | None):

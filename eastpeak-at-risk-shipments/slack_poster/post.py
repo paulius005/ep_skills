@@ -6,7 +6,14 @@ import json
 import os
 import urllib.request
 
-from .blocks import Report, plan_messages, parent_blocks, parent_fallback, slack_permalink
+from .blocks import (
+    CHANNEL_ID,
+    Report,
+    parent_blocks,
+    parent_fallback,
+    plan_messages,
+    slack_permalink,
+)
 
 TOKEN_ENV = "SLACK_BOT_TOKEN"
 SLACK_API = "https://slack.com/api/"
@@ -49,6 +56,7 @@ def post_thread_reply(
     channel_id: str,
     thread_ts: str,
     text: str,
+    blocks: list | None = None,
     transport=None,
     token: str | None = None,
 ) -> dict:
@@ -56,7 +64,8 @@ def post_thread_reply(
 
     The token is read from SLACK_BOT_TOKEN when `transport` is omitted. It is
     sent only on the Authorization header. The body has no username override,
-    so Slack shows the app that owns the token.
+    so Slack shows the app that owns the token. Pass `blocks` for a formatted
+    conversation reply. Omit them for a plain shipment-action acknowledgement.
     """
     if not thread_ts:
         raise RuntimeError("thread_ts is required")
@@ -72,6 +81,8 @@ def post_thread_reply(
         "unfurl_links": False,
         "unfurl_media": False,
     }
+    if blocks:
+        body["blocks"] = blocks
     return transport("chat.postMessage", body)
 
 
@@ -138,3 +149,26 @@ def post_report(report: Report, *, transport=None, token: str | None = None, dry
         "permalink": permalink,
         "results": results,
     }
+
+
+def post_reply(
+    thread_ts: str,
+    text: str,
+    blocks: list,
+    *,
+    channel_id: str = CHANNEL_ID,
+    transport=None,
+    token: str | None = None,
+) -> dict:
+    """Post a formatted thread reply. Same app and token as post_thread_reply."""
+    if channel_id != CHANNEL_ID:
+        raise ValueError(f"channel_id must be {CHANNEL_ID}")
+    posted = post_thread_reply(
+        channel_id=channel_id,
+        thread_ts=thread_ts,
+        text=text,
+        blocks=blocks,
+        transport=transport,
+        token=token,
+    )
+    return {"ok": True, "posted": True, "ts": posted.get("ts")}
