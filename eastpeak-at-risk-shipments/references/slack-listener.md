@@ -4,7 +4,7 @@ These are the built-in buttons a reply may include. Post a button only when its 
 
 The Slack text of a reply still omits the store id, full address, email, and phone. The button payload may carry order number, order key, store id, and RMA so the listener can re-read the order. It must not carry the address, email, or phone.
 
-If this runtime cannot attach a real Slack button, do not post a link or label that only looks clickable. Say the button was not posted, and keep the suggested next step in the note.
+If this runtime cannot attach a real Slack button, do not post a link or label that only looks clickable. Say the button was not posted on the *Next* line.
 
 ## USPS Priority
 
