@@ -67,6 +67,8 @@ def post_thread_reply(
     so Slack shows the app that owns the token. Pass `blocks` for a formatted
     conversation reply. Omit them for a plain shipment-action acknowledgement.
     """
+    if channel_id != CHANNEL_ID:
+        raise RuntimeError("wrong channel")
     if not thread_ts:
         raise RuntimeError("thread_ts is required")
     if transport is None:

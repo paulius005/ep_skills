@@ -1,7 +1,8 @@
 """Classify one Slack event and post only through slack_poster.
 
-A message that does not map to an allowed action prints `"posted": false`
-and does not call chat.postMessage. This command never prints SLACK_BOT_TOKEN.
+A message that does not map to an allowed shipment action prints `"posted": false`
+and does not call chat.postMessage. A conversation still needs a reply from the
+agent. This command never prints SLACK_BOT_TOKEN.
 """
 
 from __future__ import annotations
@@ -24,7 +25,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--no-post",
         action="store_true",
-        help="Classify only. Do not read the bot token and do not call Slack.",
+        help="Classify only. Do not post a stock reply.",
     )
     args = parser.parse_args(argv)
     event = json.loads(args.event.read_text(encoding="utf-8"))

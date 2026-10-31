@@ -13,6 +13,8 @@ from slack_poster.blocks import (  # noqa: E402
     Shipment,
     address_section_text,
     context_line,
+    conversation_blocks,
+    conversation_fallback,
     format_header_date,
     order_blocks,
     pacific_calendar_date,
@@ -322,6 +324,36 @@ class ButtonVisibilityTests(unittest.TestCase):
         self.assertNotIn("flavorcloud", blob)
         self.assertFalse(show_draft_button(shipment()))
         self.assertFalse(show_usps_button(shipment()))
+
+
+class ConversationTests(unittest.TestCase):
+    def test_conversation_is_a_bold_lead_bullets_and_a_short_note(self):
+        _text, blocks = conversation_blocks(
+            "The unsent draft for order 8257 is ready for review.",
+            ["Subject: shipping issue with order: #8257", "Not sent."],
+            "The draft email is in your inbox.",
+        )
+        self.assertEqual([block["type"] for block in blocks], ["section", "section", "context"])
+        self.assertEqual(
+            blocks[0]["text"]["text"],
+            "*The unsent draft for order 8257 is ready for review.*",
+        )
+        self.assertIn("• Subject: shipping issue with order: #8257", blocks[1]["text"]["text"])
+        self.assertLessEqual(len(blocks[2]["elements"][0]["text"]), 75)
+        fallback = conversation_fallback(
+            "The unsent draft for order 8257 is ready for review.",
+            ["Not sent."],
+            "The draft email is in your inbox.",
+        )
+        self.assertNotIn("*", fallback)
+
+    def test_conversation_rejects_a_long_note_and_an_empty_list(self):
+        with self.assertRaises(ValueError):
+            conversation_blocks("Ready.", ["One"], "x" * 76)
+        with self.assertRaises(ValueError):
+            conversation_blocks("Ready.", [], "Noted.")
+        with self.assertRaises(ValueError):
+            conversation_blocks("First line.\nSecond line.", ["One"], "Noted.")
 
 
 if __name__ == "__main__":

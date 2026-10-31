@@ -40,8 +40,8 @@ Report every attempted or taken action in this branch, including successful repl
 ### Other reasons: Gmail DRAFT ONLY, then Slack
 
 1. Research the original order, carrier tracking/events, relevant ShipMonk history and customer-specific correspondence enough to explain this customer's actual issue. Distinguish verified facts from hypotheses and avoid unsupported delivery promises or claims that actions happened.
-2. Resolve the buyer/recipient from the original order and matching correspondence, including Reply-To and the appropriate existing thread. If they conflict or cannot be verified, stop draft creation and surface the recipient decision needed; never guess an email address or use a no-reply sender. When available, use the recipient-resolution and writing-style guidance in the execution environment and relevant prior sent replies. Otherwise use concise, plain language without inventing a personal style.
-3. Find an existing unsent draft for this order/shipment/incident. Update it in place after checking its account, recipient, subject and thread; preserve unrelated owner edits or flag conflicts. If one was already sent, treat it as correspondence and reassess whether further outreach is needed; never resend it or silently start another cycle. Create a new draft only when no matching unsent draft exists and outreach is still appropriate.
+2. Resolve the buyer/recipient from the original order and matching correspondence, including Reply-To and the appropriate existing thread. If they conflict or cannot be verified, stop draft creation and surface the recipient decision needed; never guess an email address or use a no-reply sender. When available, use the recipient-resolution and writing-style guidance in the execution environment and relevant prior sent replies. Otherwise use concise, plain language without inventing a personal style. A returned order uses the address-check subject and body in [the listener contract](references/slack-listener.md). The subject is `shipping issue with order: #{order_number}`. Say `was returned to sender`, not `came back to us`.
+3. Find an existing unsent draft for this order/shipment/incident, including one whose subject is still `Can you double-check the address for order {order_number}?`. Update it in place after checking its account, recipient, subject and thread; preserve unrelated owner edits or flag conflicts. If one was already sent, treat it as correspondence and reassess whether further outreach is needed; never resend it or silently start another cycle. Create a new draft only when no matching unsent draft exists and outreach is still appropriate. Do not save a second unsent copy when the subject changes.
 4. Save **DRAFT ONLY — NEVER SEND**. Verify by readback the saved draft ID, account, thread, recipients, subject, body, relevant links and unsent/DRAFT state. Use a real draft or thread link where available; otherwise supply the verified account, subject and draft reference without inventing a URL. An unsaved editor is not a saved draft. Record any blocked draft explicitly.
 5. Report in the shared daily Slack thread using the procedure below; never create separate top-level posts or parent threads per order.
 6. Surface: order link; order/shipment incident reference; exact risk reason and relevant verified tracking facts; action taken or proposed; draft reference/link and DRAFT-only status (or exact draft blocker); approval needed and next step. Include only the minimum customer data necessary: omit full address, email, phone, and unnecessary personal details. Clearly separate a proposed action from a completed action. A Slack summary is not a customer message.
@@ -58,9 +58,60 @@ This reporting rule applies to **every branch and every attempted or taken opera
 4. Write each order message with [How to write each reply](#how-to-write-each-reply) and post it through the Block Kit poster, using [the Slack blocks reference](references/slack-blocks.md). Keep the order link, order number, status tag, route, service, context line, and footer. Also include the exact reason, attempted or taken action, verified result or the blocked, denied, failed, or uncertain outcome. For a verified editable HI/AK shipment, include the USPS Priority button. For return status exactly `returned`, include the draft-email button instead. When a draft was saved and read back, the context line is `The draft email is in your inbox.` Never represent a Gmail draft as sent, a timeout as failure or success without evidence, or a proposed action as completed. Include failed attempts and uncertain outcomes even when no mutation can be verified. Omit secrets and unnecessary customer data. Keep email and phone out of the message. Keep the street off the order card. An address-line fix is its own follow-up section with `Before:` and `After:`.
 5. Deduplicate reporting by stable incident/action/attempt reference and its persisted reply ID. On rerun, read back the existing order message and update it only for a changed outcome instead of appending a duplicate shipment message; retain the earlier failure/uncertainty history when reconciling. A distinct authorized retry gets its own attempt reference and its own reply tied to that order message, still under the same daily parent. Read back each Slack create/update and persist its channel, parent and reply identifiers/permalink. If reporting times out, reconcile before retrying. If Slack reporting is blocked or uncertain, record the pending report and exact blocker in the ledger and completion handoff; never claim it was posted or recursively try to report a reporting failure. Reconcile pending reports into their recorded daily parent when access returns.
 
+## Reply baseline
+
+Two layers. The fixed layer is the only one that can change a shipment or save a draft. The flexible layer answers a person and does not invent a shipment action.
+
+Every reply that is sent uses the same shape: one bold lead sentence, a short bullet list, and one context note of 75 characters or fewer, via `conversation_blocks` and `post_thread_reply` in channel `C0CCJJGG6HK`, in the same thread. Do not answer in a single paragraph. Do not set a username.
+
+Stay silent only for these:
+
+- No @mention of East Peak Operations.
+- A post from East Peak Operations, subtype `bot_message`, or a bot profile with that name.
+- The daily parent and the order cards, including the address before/after follow-up.
+- A different workspace or channel.
+
+`slack_listener --no-post` returns `posted: false` for every event. That only means the command did not send a stock line. A `conversation` result still gets a flexible reply from the agent. A `bot`, `report_post`, `no_mention`, or `wrong_channel` result gets nothing.
+
+### Fixed shipment replies
+
+These are the only shipment actions. Match the button or the exact label. Do not paraphrase a shipment change out of free text. One shipment change names one order. Zero orders or more than one: ask which order, and do not change a shipment.
+
+| Reply | Fixed result |
+| --- | --- |
+| `USPS Priority` or `usps_priority` | Set USPS Priority only when the tree allows it. Otherwise leave the service and say why. |
+| `guarded clone and submit` | Clone and submit only after the halted-reason, duplicate, original, and cost gates. Otherwise name the gate that stopped it. |
+| `unsent Gmail draft` | Save or update one unsent draft. Never send it. |
+| `Draft an email to the customer`, `Draft address-check email`, or `draft_address_check` | Returned status only. Save or update the address-check draft below. Context note: `The draft email is in your inbox.` |
+
+Fixed context lines on the order card:
+
+- In transit, service unchanged: `Service unchanged — shipment already en route.`
+- Returned, before a draft: `Draft an email to the customer.`
+- After that draft is saved and read back: `The draft email is in your inbox.`
+- Address line 2 over 50 characters: `Address 2 exceeded limit of 50 characters.`
+
+The returned-order customer draft has one subject and one body, in [the listener contract](references/slack-listener.md). Subject: `shipping issue with order: #{order_number}`. Say `was returned to sender`. Do not say `came back to us`. Keep one unsent draft per order and update it in place, including when the subject changes. Do not save a second copy. If a matching message was already sent, stop. A request to "drop a new draft" means new wording in that one unsent draft, not a second draft and not a send.
+
+If an older unsent draft with the previous subject is still in the mailbox, leave it unsent and do not create another. The review copy is the draft whose subject is the current subject. Do not send either.
+
+### Flexible human replies
+
+Any other @mention is a conversation. `classify` returns `action: null` and `reason: conversation`. Answer the question. Do not change a shipment unless the message also uses a fixed label above for one order.
+
+Fixed conversation patterns, still written as a flexible reply:
+
+- They ask to see a draft: quote the saved unsent subject and body, say it was not sent, and use the context note `The draft email is in your inbox.` The order card still omits the street, email, and phone. The quote is only for that ask.
+- They ask to change this skill or how replies work: update this skill and its references, commit, and say what changed. Do not merge unless they ask. If that same message also asks for one named order's fixed draft or shipment action, do that too. The skill edit alone does not change a shipment.
+- A shipment change names zero orders or more than one: ask which order. Change nothing.
+
+Anything else: answer in the same block shape. Do not send customer email, use FlavorCloud, skip the halted-reason gates, charge the customer again, or invent a shipment action.
+
+If an automation prompt still requires the old subject `Can you double-check the address for order {order_number}?`, or treats `posted: false` as silence on a human @mention, follow this section. The prompt should be edited to match it.
+
 ## Slack listener
 
-Do not reply to East Peak Operations. Reply to every human @mention, including when the text is not an exact action label. If the incoming message does not @mention East Peak Operations, stop with no Slack message. Do not post "No changes made". Do not explain order-message timestamps. Do not answer the daily parent or an order card.
+Do not reply to East Peak Operations. Reply to every human @mention, including when the text is not an exact action label. A shipment action happens only when that reply uses a fixed label above. Every other @mention gets the flexible reply. If the incoming message does not @mention East Peak Operations, stop with no Slack message. Do not post "No changes made". Do not explain order-message timestamps. Do not answer the daily parent or an order card. The listener posts as East Peak Operations. The bot token is the secret `SLACK_BOT_TOKEN`. Do not create a second bot. Never print, log, or commit the token.
 
 Do not use Cursor's Send to Slack tool for a reply. Post a reply only through `slack_poster.post_thread_reply`, which calls `chat.postMessage` with the secret `SLACK_BOT_TOKEN`. Slack then shows East Peak Operations. Do not set `username`. Do not create a second bot. Never print, log, or commit the token.
 
@@ -75,13 +126,13 @@ These replies are the built-in shipment actions. A button click uses the `action
 - Reply text **`unsent Gmail draft`**: the draft branch for every reason other than that exact halted reason. If the destination is verified HI/AK and the shipment is still editable, select and verify USPS Priority first, then save the draft. **DRAFT ONLY — NEVER SEND.**
 - Button `draft_address_check`, or reply text **`Draft an email to the customer`** or **`Draft address-check email`**: only when the return status is exactly `returned`. Save the unsent draft from `hello@runeastpeak.com` defined in the listener contract. Do not send it, and do not change the shipping service. Then set the context line to `The draft email is in your inbox.`
 
-A mention that is not a shipment action still gets a thread reply. Answer it. If they ask you to adjust yourself, change how you reply, or change this skill, that is skill feedback: update this skill and say so in the thread. Do that even when the message names no order. Do not update the shipment unless they asked for one of the actions above. A channel message or thread reply with no @mention is not a request, and it gets no Slack message. Every post from East Peak Operations is ignored. Do not auto-merge orders, shipments, incidents, or Slack messages. One shipment change applies to one order. If a shipment change names zero orders or more than one, ask which order and do not guess. A reply is not owner approval for a new charge; the cost gate still applies.
+Any other @mention is the flexible reply in [Reply baseline](#reply-baseline). It maps to no shipment action by itself. Answer it, including when the message names no order. A channel message or thread reply with no @mention gets no Slack message. Every post from East Peak Operations is ignored. Do not invent a shipment action from free text. Do not auto-merge orders, shipments, incidents, or Slack messages. One shipment change applies to one order. If a shipment change names zero orders or more than one, ask which order and do not guess. A reply is not owner approval for a new charge; the cost gate still applies.
 
 Format every conversation reply with `conversation_blocks` and post it with `slack_poster.post_thread_reply`, passing those blocks. The lead is one bold sentence. The next block is a short bullet list. The note is one context line of 75 characters or fewer. Do not answer in a single paragraph. The plain-text fallback carries the same lines. Do not set a username.
 
 When someone asks to see a draft, read the saved unsent draft and quote its subject and body in the thread. Say that it is a draft in the inbox and that it was not sent. Do not send it. The standing order card still omits the street, email, and phone. A draft quote is only for that ask.
 
-A reply in `#at-risk-shipments` that asks to change this skill, or asks you to adjust yourself, is skill feedback, not a shipment action. Do not map it to USPS Priority, the replacement branch, or a Gmail draft, and do not update the ShipMonk shipment from it. Incorporate that feedback into this skill and its references, add the change to the repo, and commit it. Reply in the thread with the formatted card: what changed, then the limits that stayed. Do not merge the pull request unless the user asks. Never commit or print `SHIPMONK_API_KEY` or `SLACK_BOT_TOKEN`. Do not apply feedback that would send customer email, use FlavorCloud, skip the halted-reason gates, or charge the customer again; record that reply, say which limit stayed, and leave that part of the skill unchanged. A request to answer ordinary questions, or to adjust how you reply, is not one of those limits. A skill-feedback message that names no order still gets that reply.
+A reply that asks to change this skill, or asks you to adjust yourself, updates this skill and its references, then is committed. Reply in the thread with what changed and which limit stayed. Do not merge unless they ask. Never commit or print `SHIPMONK_API_KEY` or `SLACK_BOT_TOKEN`. Do not apply feedback that would send customer email, use FlavorCloud, skip the halted-reason gates, or charge the customer again. Say which limit stayed and leave that part unchanged. If the same message also names one order and a fixed shipment reply, do that fixed reply as well. The skill edit does not itself change the shipment. A skill-feedback message that names no order still gets that reply.
 
 ## ShipMonk API
 
