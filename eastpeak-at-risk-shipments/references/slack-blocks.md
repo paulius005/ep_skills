@@ -46,7 +46,7 @@ Plain words, not raw status keys. Omit a field object when it does not apply. A 
           "type": "button",
           "action_id": "draft_address_check",
           "text": {"type": "plain_text", "text": "Draft address-check email", "emoji": true},
-          "value": "{\"order_number\":\"8257\",\"order_key\":\"18927830040707\",\"rma\":\"712-884-506\"}"
+          "value": "{\"v\":1,\"action\":\"draft_address_check\",\"store_id\":\"19002\",\"order_key\":\"18927830040707\",\"rma\":\"712-884-506\"}"
         },
         {
           "type": "button",
