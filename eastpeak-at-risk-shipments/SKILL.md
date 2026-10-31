@@ -23,7 +23,7 @@ Before any mutation, read [the incident record and rerun contract](references/in
 
 Hawaii/Alaska means verified US destination state HI/AK (or its unambiguous full name), not a substring of a city or free-text note. Preserve the intended recipient, address, products, and quantities throughout. Selecting USPS Priority alone is not permission to release an otherwise held shipment.
 
-Do not treat `processing_status` as the shipment stage when the order lists any `returns[].rma`. For each RMA, read `GET /v1/integrations/returns-list?rma={rma}`. The return's `status` is the stage. Exact status `returned` means the shipment was returned, even when `processing_status` is still `en_route`. The built-in action is then the address-check draft button in [the Slack listener reference](references/slack-listener.md). Do not offer USPS Priority, and do not describe the shipment as rerouted. The button creates a Gmail draft from `hello@runeastpeak.com` and never sends it.
+Do not treat `processing_status` as the shipment stage when the order lists any `returns[].rma`. For each RMA, read `GET /v1/integrations/returns-list?rma={rma}`. The return's `status` is the stage. Exact status `returned` means the shipment was returned after attempted delivery, even when `processing_status` is still `en_route`. The built-in action is then the address-check draft button in [the Slack listener reference](references/slack-listener.md). Do not offer USPS Priority, and do not describe the shipment as rerouted or as still en route. The suggestion is to draft an address-check email to the customer and leave the service unchanged. The button creates a Gmail draft from `hello@runeastpeak.com` and never sends it.
 
 Do not use FlavorCloud. It is not an East Peak option for this skill: do not select it, do not offer it as a button, and do not substitute it when USPS Priority is unavailable or eligibility is unclear.
 
@@ -95,7 +95,7 @@ When the sender accepts only markdown, use the same fields in the same order, on
 
 **Built-in action.** If a built-in action applies, put that control in the reply and do not replace it with a different suggestion. The controls and their gates are in [the Slack listener reference](references/slack-listener.md).
 
-- Return stage exactly `returned`: the **Draft address-check email** button. This wins over the USPS Priority button. The click saves an unsent draft from `hello@runeastpeak.com`. It does not send mail.
+- Return stage exactly `returned`: the **Draft address-check email** button. This wins over the USPS Priority button. The click saves an unsent draft from `hello@runeastpeak.com`. It does not send mail. The context line is exactly: `Returned after attempted delivery. Suggestion: draft an address-check email to the customer. Service left unchanged.` That line is a suggestion, not a claim that a draft was saved. The Processing field may still say En route. Do not write "Already en route" on this suggestion, and do not add the packed or en-route "check tracking" suggestion beside it. If action buttons cannot be posted, this same line is the whole context. Do not prefix a second "Suggestion: Draft address-check email" onto an en-route sentence.
 - Verified editable Hawaii or Alaska, and not returned: the USPS Priority button. Do not use FlavorCloud. Do not add that button, and do not describe the order as rerouted, when it is already en route, packed, returned, or otherwise not editable.
 
 A **View order in ShipMonk** button is a URL button and does not need a click handler. **Draft address-check email** and **USPS Priority** are `action_id` buttons. Post them only when the sender can deliver Block Kit actions and a click reaches an agent that can run [the Slack listener](references/slack-listener.md). If it cannot, leave those buttons off and put the same words on the context line. Do not post a button that does nothing.
@@ -115,7 +115,8 @@ A **View order in ShipMonk** button is a URL button and does not need a click ha
 - `automation_rule`: open the order and clear the automation-rule hold.
 - `value_added_service_problem`: fix the value-added service, or change the order if it cannot be done.
 - `at_risk`, and the order is still editable and is not Hawaii or Alaska: check whether it can still make the ship-by date. Treat a faster service as a suggestion until someone approves the change.
-- `at_risk`, and the order is already packed, en route, or otherwise not editable: leave the service alone. Check tracking and tell the customer if it will miss the date. If the return stage is `returned`, use the address-check button instead of this suggestion.
+- `at_risk`, and the order is already packed, en route, or otherwise not editable, and the return stage is not `returned`: leave the service alone. Check tracking and tell the customer if it will miss the date.
+- `at_risk` with return stage `returned`: use the returned-shipment context line and the address-check button. Do not use the en-route suggestion.
 
 If several flags are true, list all of them under Action required and use the blocking one for the context line or action button. If the order is not editable, do not suggest changing the address, the service, or the items.
 
@@ -129,7 +130,7 @@ The 8257 card below is the shape. Its Draft address-check button is the control,
 *Action required:* At risk
 *Ship to:* Hawaii
 *Service:* USPS Priority Mail
-Already en route. Service left unchanged.
+Returned after attempted delivery. Suggestion: draft an address-check email to the customer. Service left unchanged.
 [Draft address-check email] [View order in ShipMonk]
 ```
 

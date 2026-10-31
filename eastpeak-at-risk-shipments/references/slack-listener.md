@@ -20,7 +20,7 @@ If the event names zero order messages, or more than one, record it and stop. Do
 
 ## Return stage
 
-Do not treat `processing_status` as the shipment stage when the order lists any `returns[].rma`. For each RMA, read `GET /v1/integrations/returns-list?rma={rma}`. Exact status `returned` means the shipment was returned, even when `processing_status` is still `en_route`. That order gets the address-check button and does not get USPS Priority. Do not match the substring "return" in a city, note, or tracking line. Other return statuses are not this gate.
+Do not treat `processing_status` as the shipment stage when the order lists any `returns[].rma`. For each RMA, read `GET /v1/integrations/returns-list?rma={rma}`. Exact status `returned` means the shipment was returned after attempted delivery, even when `processing_status` is still `en_route`. That order gets the address-check button and does not get USPS Priority. The order-message context line is exactly `Returned after attempted delivery. Suggestion: draft an address-check email to the customer. Service left unchanged.` Do not write "Already en route" on that line, and do not append the packed or en-route tracking suggestion. Do not match the substring "return" in a city, note, or tracking line. Other return statuses are not this gate.
 
 ## How a reply maps to an action
 
