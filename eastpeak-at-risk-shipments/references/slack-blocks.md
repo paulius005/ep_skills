@@ -34,7 +34,7 @@ Plain words, not raw status keys. Omit a field object when it does not apply. A 
       "elements": [
         {
           "type": "mrkdwn",
-          "text": "The package was returned after an attempted delivery. Draft an email to the customer. Leave the service unchanged."
+          "text": "Draft an email to the customer."
         }
       ]
     },
@@ -45,7 +45,7 @@ Plain words, not raw status keys. Omit a field object when it does not apply. A 
         {
           "type": "button",
           "action_id": "draft_address_check",
-          "text": {"type": "plain_text", "text": "Draft address-check email", "emoji": true},
+          "text": {"type": "plain_text", "text": "Draft an email to the customer", "emoji": true},
           "value": "{\"v\":1,\"action\":\"draft_address_check\",\"store_id\":\"19002\",\"order_key\":\"18927830040707\",\"rma\":\"712-884-506\"}"
         },
         {
@@ -62,18 +62,18 @@ Plain words, not raw status keys. Omit a field object when it does not apply. A 
 
 `Return` is present because this order's return status is `returned` even though processing is still en route. Drop that field when there is no return.
 
-For that returned card the context line is `The package was returned after an attempted delivery. Draft an email to the customer. Leave the service unchanged.` Do not shorten it to `Suggestion: Draft address-check email. Already en route. Service left unchanged.`
+Before a draft exists, that context line is `Draft an email to the customer.` After the draft is saved and read back, the line is `The draft email is in your inbox.` and the draft button is omitted. Do not write `Already en route. Service left unchanged. Draft address-check email.`
 
 `Service` is "Not set (requested Standard)" when ShipMonk has not resolved a method.
 
-Add a *Draft* field, "DRAFT ONLY / unsent", only after a draft is saved. Do not say one was saved because the button is on the card.
+Do not add a Draft field. The context line says `The draft email is in your inbox.` only after a draft is saved and read back. The button is not proof of a draft.
 
 ## Buttons
 
 | Button | When | Behavior |
 | --- | --- | --- |
 | View order in ShipMonk | Every order | `url` button. Opens the order. No listener. |
-| Draft address-check email | Return status exactly `returned` | `action_id` `draft_address_check`. Runs the listener. Saves an unsent draft from `hello@runeastpeak.com`. Does not send. |
+| Draft an email to the customer | Return status exactly `returned`, and no saved draft yet | `action_id` `draft_address_check`. Runs the listener. Saves an unsent draft from `hello@runeastpeak.com`. Does not send. |
 | USPS Priority | Verified editable Hawaii or Alaska, and not returned | `action_id` `usps_priority`. Does not run for an en route, packed, or returned order. Does not use FlavorCloud. |
 
 Put at most those buttons in `actions.elements`. Slack allows five. Do not include an `action_id` button unless a click will reach an agent that runs the listener. A URL button still works without that.
@@ -92,6 +92,6 @@ Use this only when the sender cannot post `blocks`. Same facts, no fake buttons.
 *Action required:* At risk
 *Ship to:* Hawaii
 *Service:* USPS Priority Mail
-The package was returned after an attempted delivery. Draft an email to the customer. Leave the service unchanged.
+Draft an email to the customer.
 <https://app.shipmonk.com/orders/lookup/19002/18927830040707|View order in ShipMonk>
 ```
