@@ -23,6 +23,8 @@ Before any mutation, read [the incident record and rerun contract](references/in
 
 Hawaii/Alaska means verified US destination state HI/AK (or its unambiguous full name), not a substring of a city or free-text note. Preserve the intended recipient, address, products, and quantities throughout. Selecting USPS Priority alone is not permission to release an otherwise held shipment.
 
+Do not treat `processing_status` as the shipment stage when the order lists any `returns[].rma`. For each RMA, read `GET /v1/integrations/returns-list?rma={rma}`. The return's `status` is the stage. Exact status `returned` means the shipment was returned, even when `processing_status` is still `en_route`. The built-in action is then the address-check draft button in [the Slack listener reference](references/slack-listener.md). Do not offer USPS Priority, and do not describe the shipment as rerouted. The button creates a Gmail draft from `hello@runeastpeak.com` and never sends it.
+
 ### Exact halted reason: guarded clone and submit
 
 1. Inspect original tracking directly and any existing replacement by order reference, shipment lineage, recipient/items, and incident record. If the original has moved, been delivered, or been handed off, do not create a duplicate; flag the conflict for owner review. If an existing matching replacement is submitted or fulfilled, verify and record it without creating another. Resume a matching editable replacement only after establishing that it belongs to this incident and is not a different order.
@@ -69,7 +71,12 @@ Say the status in words, such as "can't be submitted", "packed", or "already on 
 
 Mention a draft, a failed attempt, or a blocked change only when it changes what the reader should do. Label an unsent draft **DRAFT ONLY / unsent**. Do not add a boilerplate footer such as "no shipment change in this run."
 
-**Built-in action.** If a built-in action applies, put that control in the reply and do not replace it with a different suggestion. The built-in action is the USPS Priority button defined in [the Slack listener reference](references/slack-listener.md), and only for a verified Hawaii or Alaska order that is still editable. Do not invent that button when the reference is missing. Do not use FlavorCloud. Do not add the button, and do not describe the order as rerouted, when it is already en route or otherwise not editable.
+**Built-in action.** If a built-in action applies, put that control in the reply and do not replace it with a different suggestion. The controls and their gates are in [the Slack listener reference](references/slack-listener.md).
+
+- Return stage exactly `returned`: the **Draft address-check email** button. This wins over the USPS Priority button. The click saves an unsent draft from `hello@runeastpeak.com`. It does not send mail.
+- Verified editable Hawaii or Alaska, and not returned: the USPS Priority button. Do not use FlavorCloud. Do not add that button, and do not describe the order as rerouted, when it is already en route, packed, returned, or otherwise not editable.
+
+If this runtime cannot attach a real Slack button, say that and do not post a dead link. The note can still name the action a person would take.
 
 **No built-in action.** When that button does not apply, the action line is one suggested next step. Phrase it as a suggestion, not as work already done. A suggestion in Slack is not authorization to perform it. Use the flag that blocks fulfillment:
 
@@ -86,7 +93,7 @@ Mention a draft, a failed attempt, or a blocked change only when it changes what
 - `automation_rule`: open the order and clear the automation-rule hold.
 - `value_added_service_problem`: fix the value-added service, or change the order if it cannot be done.
 - `at_risk`, and the order is still editable and is not Hawaii or Alaska: check whether it can still make the ship-by date. Treat a faster service as a suggestion until someone approves the change.
-- `at_risk`, and the order is already packed, en route, or otherwise not editable: leave the service alone. Check tracking and tell the customer if it will miss the date.
+- `at_risk`, and the order is already packed, en route, or otherwise not editable: leave the service alone. Check tracking and tell the customer if it will miss the date. If the return stage is `returned`, use the address-check button instead of this suggestion.
 
 If several flags are true, suggest the one that blocks fulfillment and mention the others in the headline or the status sentence. If the order is not editable, do not suggest changing the address, the service, or the items.
 
@@ -98,11 +105,13 @@ https://app.shipmonk.com/orders/lookup/19002/18973146120323
 ```
 
 ```
-*8257* — already on the way to Hawaii
-It's on USPS Priority Mail and already en route, so leave the service alone.
-It's at risk of missing the date. Check the tracking and tell the customer if it will be late.
+*8257* — came back from Hawaii
+It went out USPS Priority Mail. The order still says en route, but the return stage is returned (received October 21).
+Draft address-check email
 https://app.shipmonk.com/orders/lookup/19002/18927830040707
 ```
+
+The action line in that example is the button label, not a claim that the draft was saved.
 
 ## Verification, completion and restrictions
 
