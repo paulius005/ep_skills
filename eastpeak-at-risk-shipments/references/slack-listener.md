@@ -4,15 +4,19 @@ These are the built-in buttons a reply may include. Post a button only when its 
 
 The Slack text of a reply still omits the store id, full address, email, and phone. The button payload may carry order number, order key, store id, and RMA so the listener can re-read the order. It must not carry the address, email, or phone.
 
-If this runtime cannot attach a real Slack button, do not post a link or label that only looks clickable. Say the button was not posted on the *Next* line.
+Button `action_id` values and the card around them are in [the Slack blocks reference](slack-blocks.md). A URL button for the order link can always be posted. An `action_id` button is posted only when a click will reach an agent that runs this file. Otherwise omit the button and keep the same words on the context line.
 
 ## USPS Priority
+
+`action_id`: `usps_priority`
 
 Gate: verified US destination state HI or AK (or the unambiguous full name), and the shipment is still editable. Do not use it when the order is packed, en route, returned, or otherwise not editable. Do not use FlavorCloud. Do not describe an already-moving shipment as rerouted.
 
 This file does not define a carrier service id. Do not invent one. Selecting the button is not permission to release a held shipment.
 
 ## Draft address-check email
+
+`action_id`: `draft_address_check`
 
 Label: **Draft address-check email**
 
