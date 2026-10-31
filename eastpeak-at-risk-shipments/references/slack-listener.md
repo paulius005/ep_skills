@@ -150,14 +150,14 @@ On `draft_address_check` only:
 1. Re-read the return. If the status is no longer exactly `returned`, stop and say so. Do not draft from a stale button.
 2. Re-read the order. The recipient is `customer_email` when the ship-to email is empty. If both are present and differ, or neither is present, stop and ask which address to use. Never guess.
 3. The From account must be `hello@runeastpeak.com`. If that mailbox is not the one available, stop. Do not draft from another account.
-4. Search for an existing unsent draft for this order whose subject is the subject below. Update that draft in place. If a matching message was already sent, stop and report it. Do not send another.
+4. Search for an existing unsent draft for this order whose subject is the subject below, or the older subject `Can you double-check the address for order {order_number}?`. Update that draft in place, including the subject. If a matching message was already sent, stop and report it. Do not send another. There is no separate support-agent language guide in this repo. Use the subject and body below. Say `was returned to sender`. Be direct. One human ask. Do not use `came back to us` or `If that's right, reply and let us know. If it isn't, reply with the corrected address.`
 5. Save **DRAFT ONLY — NEVER SEND**. Read back the draft id, From, To, subject, body, and unsent state.
 6. Reply on that order message: `The draft email is in your inbox.` Include the draft link when one exists. Do not include the address, email, or phone. Do not say the draft was sent.
 
 Subject:
 
 ```
-Can you double-check the address for order {order_number}?
+shipping issue with order: #{order_number}
 ```
 
 Body:
@@ -165,15 +165,15 @@ Body:
 ```
 Hi {first_name},
 
-Your East Peak order {order_number} came back to us on {returned_date}. Before we send it again, can you double-check the shipping address?
+Your East Peak order {order_number} was returned to sender on {returned_date}. We have not shipped it again.
+
+Please check the address we have on file:
 
 {street1}
 {street2 line only when present}
 {city}, {state} {zip}
 
-If that's right, reply and let us know. If it isn't, reply with the corrected address.
-
-We haven't reshipped it.
+If that address is right, just reply to this email. If something needs to change, send the corrected address and we will update it before we ship again.
 
 Thanks,
 East Peak
