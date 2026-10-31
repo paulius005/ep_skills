@@ -51,8 +51,58 @@ This reporting rule applies to **every branch and every attempted or taken opera
 1. Verify the **East Peak workspace** and channel **C0CCJJGG6HK** at [the configured channel](https://east-peak-workspace.slack.com/archives/C0CCJJGG6HK). Stop posting if workspace/channel identity differs. Use the explicitly configured reporting timezone **`America/Los_Angeles` (Pacific)** for this user unless the user changes it. Compute the actual local date at run time in that timezone, including daylight-saving changes, and persist the timezone and date; do not use a hardcoded example date or silently switch day boundaries between workers or runs.
 2. Before creating a parent, consult the durable daily-thread record and search the channel for the day's existing parent. Verify its channel, date and parent message, then reuse it. If multiple candidate parents exist, reconcile rather than adding another. If none exists, claim the daily key atomically, recheck, and create exactly one parent whose entire root text is **`Shipments At Risk [Date] 🧵`**, replacing `[Date]` with the run's actual local date in the configured timezone (use `YYYY-MM-DD` consistently). Put per-order details only in replies, not in the root. An uncertain parent creation requires readback/search before retrying.
 3. Persist and read back the verified workspace ID, channel ID, reporting date/timezone, parent message timestamp/`thread_ts` and real permalink. Append all per-order action entries as replies to that parent. The daily record is shared across incidents and workers. An existing incident from a prior day uses today's parent for new actions, with references to prior entries when useful.
-4. Each reply identifies the order link, order/shipment/incident and stable action reference; exact reason; attempted/taken action; before/after or verified result; precise verified, blocked, denied, failed or uncertain status; draft reference/link explicitly labeled **DRAFT ONLY / unsent**, or the reason no draft exists; and decisions/approvals and next step. Never represent a Gmail draft as sent, a timeout as failure or success without evidence, or a proposed action as completed. Include failed attempts and uncertain outcomes even when no mutation can be verified. Omit secrets and unnecessary customer data.
+4. Write each reply using [How to write each reply](#how-to-write-each-reply). The note still has to carry the order link, the exact reason, what was attempted or taken, the verified result or the blocked, denied, failed, or uncertain outcome, and any unsent draft. Never represent a Gmail draft as sent, a timeout as failure or success without evidence, or a proposed action as completed. Include failed attempts and uncertain outcomes even when no mutation can be verified. Omit secrets and unnecessary customer data.
 5. Deduplicate reporting by stable incident/action/attempt reference and its persisted reply ID. On rerun, read back the existing reply and update it only for a changed outcome instead of appending duplicates; retain the earlier failure/uncertainty history when reconciling. A distinct authorized retry gets its own attempt reference and entry under the same daily parent. Read back each Slack create/update and persist its channel, parent and reply identifiers/permalink. If reporting times out, reconcile before retrying. If Slack reporting is blocked or uncertain, record the pending report and exact blocker in the ledger and completion handoff; never claim it was posted or recursively try to report a reporting failure. Reconcile pending reports into their recorded daily parent when access returns.
+
+### How to write each reply
+
+Write the reply as a short note to a teammate, not as a labeled field list. Do not print store id. Do not print the full address, email, or phone. The incident ledger still keeps store id; Slack does not.
+
+Use this shape:
+
+1. First line: the order number, then a dash, then what is wrong in plain language.
+2. Next sentence: where it is going and the current shipping service. Name the state, and the country when it is not the US. If no service is set, say that and mention what was requested. If the order is already packed, en route, or otherwise not editable, say that here.
+3. The action line, from the rules below.
+4. The order link on its own line.
+
+Say the status in words, such as "can't be submitted", "packed", or "already on the way". Do not print raw status keys unless the plain words would hide a difference that matters.
+
+Mention a draft, a failed attempt, or a blocked change only when it changes what the reader should do. Label an unsent draft **DRAFT ONLY / unsent**. Do not add a boilerplate footer such as "no shipment change in this run."
+
+**Built-in action.** If a built-in action applies, put that control in the reply and do not replace it with a different suggestion. The built-in action is the USPS Priority button defined in [the Slack listener reference](references/slack-listener.md), and only for a verified Hawaii or Alaska order that is still editable. Do not invent that button when the reference is missing. Do not use FlavorCloud. Do not add the button, and do not describe the order as rerouted, when it is already en route or otherwise not editable.
+
+**No built-in action.** When that button does not apply, the action line is one suggested next step. Phrase it as a suggestion, not as work already done. A suggestion in Slack is not authorization to perform it. Use the flag that blocks fulfillment:
+
+- `address`: correct the address so ShipMonk can submit it.
+- `item_mapping`: map the unmapped items to products.
+- `shipping_mapping`: choose a real carrier service for the requested method. An editable Hawaii or Alaska order uses the built-in USPS Priority action instead.
+- `customs`: fill in the missing customs details.
+- `hs_code`: add the missing HS codes.
+- `routing` or `pending_b2b_routing`: add the missing routing instructions.
+- `freight_quote`: choose a freight quote.
+- `freight_info`: add the freight details needed for a quote.
+- `ship_short`: decide whether to ship short or wait for the missing units.
+- `global_e_label`: get the missing Global-e label.
+- `automation_rule`: open the order and clear the automation-rule hold.
+- `value_added_service_problem`: fix the value-added service, or change the order if it cannot be done.
+- `at_risk`, and the order is still editable and is not Hawaii or Alaska: check whether it can still make the ship-by date. Treat a faster service as a suggestion until someone approves the change.
+- `at_risk`, and the order is already packed, en route, or otherwise not editable: leave the service alone. Check tracking and tell the customer if it will miss the date.
+
+If several flags are true, suggest the one that blocks fulfillment and mention the others in the headline or the status sentence. If the order is not editable, do not suggest changing the address, the service, or the items.
+
+```
+*8376* — address needs a fix before it can ship
+Florida. No shipping service is set yet (they asked for Standard), and ShipMonk can't submit it.
+Correct the address, then submit the order.
+https://app.shipmonk.com/orders/lookup/19002/18973146120323
+```
+
+```
+*8257* — already on the way to Hawaii
+It's on USPS Priority Mail and already en route, so leave the service alone.
+It's at risk of missing the date. Check the tracking and tell the customer if it will be late.
+https://app.shipmonk.com/orders/lookup/19002/18927830040707
+```
 
 ## Verification, completion and restrictions
 
