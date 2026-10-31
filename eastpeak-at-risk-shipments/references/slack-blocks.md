@@ -26,7 +26,8 @@ Plain words, not raw status keys. Omit a field object when it does not apply. A 
         {"type": "mrkdwn", "text": "*Return*\nReturned · received Oct 21"},
         {"type": "mrkdwn", "text": "*Action required*\nAt risk"},
         {"type": "mrkdwn", "text": "*Ship to*\nHawaii"},
-        {"type": "mrkdwn", "text": "*Service*\nUSPS Priority Mail"}
+        {"type": "mrkdwn", "text": "*Service*\nUSPS Priority Mail"},
+        {"type": "mrkdwn", "text": "*Mail*\nNo draft or correspondence"}
       ]
     },
     {
@@ -66,7 +67,9 @@ For return status exactly `returned`, the context line is the address-check sugg
 
 `Service` is "Not set (requested Standard)" when ShipMonk has not resolved a method.
 
-Add a *Draft* field, "DRAFT ONLY / unsent", only after a draft is saved. Do not say one was saved because the button is on the card.
+*Mail* is on every card. It is the inbox check for `hello@runeastpeak.com`: `No draft or correspondence`, `No sent correspondence` when only an unsent draft exists, `Correspondence on file`, or `Inbox check failed` plus the blocker. The sample line above is the empty result, not a claim that order 8257 was checked. Replace it with the verified result. Do not quote the message, and do not include the address, email, or phone.
+
+Add a *Draft* field, `DRAFT ONLY / unsent` plus the draft id, only when the inbox check finds an unsent draft. Do not say one was saved because the button is on the card. Show both *Draft* and *Mail* when a draft and sent or received correspondence both exist.
 
 ## Buttons
 
@@ -92,6 +95,7 @@ Use this only when the sender cannot post `blocks`. Same facts, no fake buttons.
 *Action required:* At risk
 *Ship to:* Hawaii
 *Service:* USPS Priority Mail
+*Mail:* No draft or correspondence
 Returned after attempted delivery. Suggestion: draft an address-check email to the customer. Service left unchanged.
 <https://app.shipmonk.com/orders/lookup/19002/18927830040707|View order in ShipMonk>
 ```
