@@ -37,6 +37,18 @@ Do not use FlavorCloud. It is not an East Peak option for this skill: do not sel
 
 Report every attempted or taken action in this branch, including successful replacements, blocked actions, failures and uncertain outcomes, in the daily Slack thread defined below. Do not automatically create a customer email for a successful halted replacement; state that no customer draft was created unless separately requested. Record unresolved risk and the next step.
 
+### Awaiting carrier processing for more than 7 days
+
+The owner ordered this path on 2026-11-01. It sits beside the halted-reason branch. It does not turn every in-transit order into a replacement. Use it when `processing_status` is exactly `awaiting_carrier_processing` and a verified timestamp shows that status has lasted more than 7 days. If that duration cannot be verified, do not clone.
+
+1. Create one replacement with `POST /v1/integrations/order`. Use a new `order_number` `{order}-R1` and a new `order_key` `{order}-reship-YYYYMMDD`. Keep the same store, warehouse, ship-to, sku, quantity, price, and requested service. Create it as `onHold`. Do not reuse the original `order_key`.
+2. Read it back. If the sku, quantity, destination state, or store does not match, stop and do not submit.
+3. Submit that new key with `POST /v1/integrations/submit-order`. On 2026-11-01, sending `unfulfilled` on the upsert left the order `onHold`. The submit call moved it to `queued_to_submit`. `queued_to_submit` is not shipped.
+4. Then resolve the original as undeliverable with the app call below. This path uses `undeliverable` even when the order has no return. If the app JWT is missing, leave the original alert on and say so. Do not cancel the original.
+5. One replacement. If `{order}-R1` already exists, do not create another. Do not send email. Do not use FlavorCloud.
+
+Order 8274 did not match this status. On 2026-11-01 it was fulfilled and `en_route`, and OnTrac had reported that the package could not be located. The owner ordered the clone anyway. The replacement is `8274-R1`, order key `8274-reship-20261101`, store 19002, sku `006-IBW2-XL` quantity 1, California, requested service Standard. Readback was `unfulfilled` and `queued_to_submit`. Original 8274 stayed fulfilled, `en_route`, and `at_risk`, with `updated_at` `2026-10-21T06:35:22+00:00`. It was not resolved.
+
 ### Other reasons: Gmail DRAFT ONLY, then Slack
 
 1. Research the original order, carrier tracking/events, relevant ShipMonk history and customer-specific correspondence enough to explain this customer's actual issue. Distinguish verified facts from hypotheses and avoid unsupported delivery promises or claims that actions happened.
@@ -106,7 +118,7 @@ Fixed conversation patterns, still written as a flexible reply:
 - They ask to change this skill or how replies work: update this skill and its references, commit, and say what changed. Do not merge unless they ask. If that same message also asks for one named order's fixed draft or shipment action, do that too. The skill edit alone does not change a shipment.
 - A shipment change names zero orders or more than one: ask which order. Change nothing.
 
-Anything else: answer in the same block shape. Do not send customer email, use FlavorCloud, skip the halted-reason gates, charge the customer again, or invent a shipment action.
+Anything else: answer in the same block shape. Do not send customer email, use FlavorCloud, skip the halted-reason gates, charge the customer again, or invent a shipment action. The owner-ordered [7-day awaiting-carrier path](#awaiting-carrier-processing-for-more-than-7-days) is the one added replacement path. It does not waive those limits for any other reason.
 
 If an automation prompt still requires the old subject `Can you double-check the address for order {order_number}?`, or treats `posted: false` as silence on a human @mention, follow this section. The prompt should be edited to match it.
 
@@ -160,7 +172,7 @@ JSON body: `{"resolveAs":"undeliverable"}`. Method and body are what the app bun
 
 Auth is `Authorization: Bearer` with the logged-in app JWT, plus `Content-Type: application/json`. The app also sends `X-Frontend-Version`. That JWT comes from `POST /api/v1/token/authenticate` with a username and password. It is not the integrations key. On 2026-11-02, `POST https://app.shipmonk.com/api/v1/orders/0/resolve-at-risk` with `Api-Key: SHIPMONK_API_KEY` and `{"resolveAs":"undeliverable"}` returned HTTP 401 `The provided API key cannot be used for this operation.` The same key as a Bearer token returned HTTP 401 `Invalid JWT Token`. `POST https://api.shipmonk.com/v1/orders/0/resolve-at-risk` returned HTTP 405, so the public host has no such write. The public order read still works and still has no numeric order id. Do not substitute `SHIPMONK_API_KEY`. Do not invent a JWT. Do not call `POST /api/v1/orders/batch/resolve-at-risk`.
 
-If the return status is not exactly `returned`, do not pick a `resolveAs`. Ask which of the four values they want, and do not call. Zero orders or more than one: ask which order and do not call. The daily report does not call this. Saving this skill does not call this.
+If the return status is not exactly `returned`, do not pick a `resolveAs`, except the owner-ordered 7-day awaiting-carrier path, which uses `undeliverable` after its replacement is queued. Otherwise ask which of the four values they want, and do not call. Zero orders or more than one: ask which order and do not call. The daily report does not call this. Saving this skill does not call this.
 
 Re-read the order and the return immediately before the POST. After it, read the order back with the integrations API. Success is `actions_required.at_risk` false and `processing_status` `undeliverable`. The app toast is not readback. If the JWT is missing, or the readback does not match, say the alert was not cleared. Do not clear the alert any other way.
 
