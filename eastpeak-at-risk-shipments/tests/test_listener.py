@@ -211,6 +211,23 @@ class ListenerTests(unittest.TestCase):
         )
         self.assertEqual(self_mention["reason"], "bot")
 
+        resolved = classify(
+            human_reply(f"<@{BOT_USER}> resolve as undeliverable"),
+            bot_user_id=BOT_USER,
+        )
+        self.assertEqual(resolved["action"], "resolve_as_undeliverable")
+        self.assertEqual(resolved["label"], "resolve as undeliverable")
+        self.assertEqual(resolved["order_ts"], ORDER_TS)
+
+        learn = classify(
+            human_reply(
+                f"<@{BOT_USER}> For 8257 figure out resolve as undeliverable via API and adjust your skill"
+            ),
+            bot_user_id=BOT_USER,
+        )
+        self.assertEqual(learn["action"], "conversation")
+        self.assertEqual(learn["reason"], "conversation")
+
     def test_a_question_is_a_conversation_and_does_not_post_a_stock_line(self):
         question = human_reply(
             f"<@{BOT_USER}>  for 8257 can you show me the draft?",
