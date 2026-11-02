@@ -10,8 +10,19 @@ from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from slack_poster.blocks import conversation_blocks, draft_quote_blocks, plan_messages, report_from_dict  # noqa: E402
-from slack_poster.post import SlackAPIError, UrllibSlackTransport, post_reply, post_report  # noqa: E402
+from slack_poster.blocks import (  # noqa: E402
+    conversation_blocks,
+    draft_quote_blocks,
+    plan_messages,
+    report_from_dict,
+)
+from slack_poster.post import (  # noqa: E402
+    SlackAPIError,
+    UrllibSlackTransport,
+    post_reply,
+    post_report,
+    post_thread_reply,
+)
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
 ROOT = Path(__file__).resolve().parents[1]
@@ -260,6 +271,36 @@ class PayloadTests(unittest.TestCase):
         for hidden in HIDDEN:
             self.assertNotIn(hidden, completed.stdout)
         self.assertEqual(completed.stderr, "")
+
+    def test_thread_reply_passes_blocks_and_sets_no_username(self):
+        text, blocks = conversation_blocks(
+            "The unsent draft for order 8257 is ready for review.",
+            ["Not sent."],
+            "The draft email is in your inbox.",
+        )
+        transport = RecordingTransport()
+        result = post_thread_reply(
+            channel_id="C0CCJJGG6HK",
+            thread_ts="1700000000.000100",
+            text=text,
+            blocks=blocks,
+            transport=transport,
+        )
+        self.assertEqual(result["ts"], "1700000000.0001")
+        method, body = transport.calls[0]
+        self.assertEqual(method, "chat.postMessage")
+        self.assertEqual(body["channel"], "C0CCJJGG6HK")
+        self.assertEqual(body["thread_ts"], "1700000000.000100")
+        self.assertEqual(body["blocks"], blocks)
+        self.assertNotIn("username", body)
+        with self.assertRaises(RuntimeError):
+            post_thread_reply(
+                channel_id="C0OTHER",
+                thread_ts="1700000000.000100",
+                text="No.",
+                blocks=blocks,
+                transport=transport,
+            )
 
     def test_conversation_reply_is_a_bold_lead_with_bullets(self):
         text, blocks = conversation_blocks(
