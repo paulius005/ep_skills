@@ -35,10 +35,10 @@ Do not pick a shipment when the message names zero orders or more than one. Ask 
 
 ## How a conversation is formatted
 
-Post the reply with `slack_poster.post_thread_reply` and blocks from `conversation_blocks`. Do not post a paragraph. Do not use Cursor's Send to Slack tool.
+Post the reply with `slack_poster.post_thread_reply` and blocks from `conversation_blocks`. Do not post a paragraph. Do not use Cursor's Send to Slack tool. A request to see a saved draft does not use this shape. Use `draft_quote_blocks` for that reply, described below.
 
 1. Lead: one sentence, rendered bold. It answers the ask.
-2. Bullets: the few facts they need, one per line.
+2. Bullets: the few facts they need, one per line. Do not put an email body, a street address, or any other copied passage into these bullets.
 3. Note: one context line, 75 characters or fewer, for the limit or the next step.
 
 A request to adjust yourself uses that same shape. The lead says the skill was updated. The bullets say what changed. The note names a limit that stayed, or says the shipment was not changed.
@@ -73,7 +73,7 @@ A reply in this channel that asks to change the skill is skill feedback. It is n
 
 Update `SKILL.md` and the references so the feedback is part of the skill, then add those files to the repo and commit. Reply in the thread with `conversation_blocks`: a bold lead, bullets for what changed, and a context note. Leave the pull request unmerged unless the user asks to merge. Never commit or print the API key. If the feedback would send customer email, use FlavorCloud, skip the halted-reason gates, or charge the customer again, record the reply, say which limit stayed, and leave that part unchanged. A request to answer ordinary questions, or to adjust yourself, is not one of those limits. That reply is still sent when the message names no order. If the same message also asks for one named order's fixed draft or shipment action, do that fixed action too.
 
-The fixed reply list and the flexible human reply live in [Reply baseline](../SKILL.md#reply-baseline). If an automation prompt still names the old returned-order subject `Can you double-check the address for order {order_number}?`, or treats an unmatched @mention as silence, follow the skill. The prompt should be changed to the current subject `shipping issue with order: #{order_number}` and to a reply on every human @mention.
+The fixed reply list and the flexible human reply live in [Reply baseline](../SKILL.md#reply-baseline). If an automation prompt still names an old returned-order subject `Can you double-check the address for order {order_number}?` or `shipping issue with order: #{order_number}`, or treats an unmatched @mention as silence, follow the skill. The prompt should be changed to the current subject `Address Confirmation for Your East Peak Order #{order_number}` and to a reply on every human @mention.
 
 The daily report posts an Address line 2 suggestion as its own reply under the daily parent. That reply is a report, not an action label. Do not map it to a shipment action, and do not edit the address because that reply exists. Changing the address remains outside this listener. The report only suggests the fix, as specified in the skill.
 
@@ -142,7 +142,7 @@ Same-thread fallback, when the reply can only sit under the daily parent:
 }
 ```
 
-The same other labels may replace `USPS Priority` in that text. Nothing else maps to a shipment action. Any other human @mention is a conversation, answered on that thread. A bot-authored copy of either payload does not map. When someone asks to see a draft, quote the saved unsent draft's subject and body in the thread, say it is in the inbox, and do not send it. The standing order card still omits the street, email, and phone.
+The same other labels may replace `USPS Priority` in that text. Nothing else maps to a shipment action. Any other human @mention is a conversation, answered on that thread. A bot-authored copy of either payload does not map. When someone asks to see a draft, post the saved unsent draft with `draft_quote_blocks`. Keep the subject, from, to, and body in one quote, with the body as paragraphs. Do not run that text through `conversation_blocks`, and do not turn each line into a bullet. Say it is in the inbox, and do not send it. The standing order card still omits the street, email, and phone.
 
 After a mapped action, post the verified result or the exact blocker as a further reply tied to that order message. Post that reply with `slack_poster.post_thread_reply` (`chat.postMessage`) as East Peak Operations, using `SLACK_BOT_TOKEN`. Do not use Cursor's Send to Slack tool. Do not set a different `username`. Do not edit the parent. Do not mark the shipment resolved because the reply was posted. Do not answer the bot's own follow-up. A message with no @mention produces no reply.
 
@@ -153,14 +153,14 @@ On `draft_address_check` only:
 1. Re-read the return. If the status is no longer exactly `returned`, stop and say so. Do not draft from a stale button.
 2. Re-read the order. The recipient is `customer_email` when the ship-to email is empty. If both are present and differ, or neither is present, stop and ask which address to use. Never guess.
 3. The From account must be `hello@runeastpeak.com`. If that mailbox is not the one available, stop. Do not draft from another account.
-4. Search hello@runeastpeak.com for an existing unsent draft for this order. Match the subject below, and also the previous subject `Can you double-check the address for order {order_number}?`. Update that draft in place, including when the subject changes. Do not save a second copy. If a matching message was already sent, stop and report it. Do not send another.
+4. Search `hello@runeastpeak.com` for an existing unsent draft for this order whose subject is the subject below, or an older subject `shipping issue with order: #{order_number}` or `Can you double-check the address for order {order_number}?`. Update that draft in place, including the subject. Do not save a second copy. If a matching message was already sent, stop and report it. Do not send another. Use the subject and body below. Capitalize the subject. Keep the note warm, natural, and short. Say the order was returned and acknowledge the hassle. Do not write `We have not shipped it again.` Include the ship-to address and one next step: confirm it or send a correction. Use only verified facts. Do not guess a return reason or promise a ship date. Include `{returned_date}` only when the return record has that date.
 5. Save **DRAFT ONLY — NEVER SEND**. Read back the draft id, From, To, subject, body, and unsent state.
-6. Reply on that order message: `The draft email is in your inbox.` Include the draft link when one exists. Do not include the address, email, or phone on that order card. Do not say the draft was sent. When a person asks to see the draft, quote the saved unsent subject and body in the thread and say it was not sent.
+6. Reply on that order message: `The draft email is in your inbox.` Include the draft link when one exists. Do not include the address, email, or phone on that order card. Do not say the draft was sent. When a person asks to see the draft, post it with `draft_quote_blocks` and say it was not sent.
 
 Subject, only for a returned order:
 
 ```
-shipping issue with order: #{order_number}
+Address Confirmation for Your East Peak Order #{order_number}
 ```
 
 Body:
@@ -168,31 +168,32 @@ Body:
 ```
 Hi {first_name},
 
-Your East Peak order {order_number} was returned to sender on {returned_date}. We have the package, and we haven't shipped it again.
+Your East Peak order #{order_number} was returned to us on {returned_date}. Sorry for the hassle—we'd love to help get this sorted.
 
-The address on the label is:
+Could you confirm that the shipping address below is correct?
 
 {street1}
 {street2 line only when present}
 {city}, {state} {zip}
 
-Would you look it over when you have a minute? Reply if we should send it there. If you'd like a different address on the label, reply with that address and we'll update it before we ship.
+If everything looks right, just reply to confirm. If anything needs updating, send us the correct address so we can work out the next steps.
 
-Thanks,
+Thanks for your help!
+
 East Peak
 ```
 
-Use the first name from the verified recipient. If it cannot be split safely, open with "Hi there,". `{returned_date}` is the return's received date in `America/Los_Angeles`, written as a calendar date. The address lines are the order's current ship-to, copied exactly. Do not claim the address failed validation, and do not invent a carrier reason. The known return reason may be unknown.
+Use the first name from the verified recipient. If it cannot be split safely, open with "Hi there,". `{returned_date}` is the return's received date in `America/Los_Angeles`, written as a calendar date. When the return record has no date, write `was returned to us` with no `on` clause. The address lines are the order's current ship-to, copied exactly. Do not claim the address failed validation, and do not invent a carrier reason. The known return reason may be unknown.
 
-Say `was returned to sender`. Do not say `came back to us`. Do not use `If that's right, reply and let us know. If it isn't, reply with the corrected address.`
+Say the order was returned. Do not write `We have not shipped it again.` or `We haven't reshipped it.` Do not use `If that's right, reply and let us know. If it isn't, reply with the corrected address.`
 
 ### Voice
 
 No language guide named Thor is in this repo or in hello@runeastpeak.com. Write the returned-order draft in the short voice of sent mail from that mailbox, and in the usual support standard: fact first, specific, human, one next step.
 
 - First name, contractions, and short sentences.
-- Name the order, the return date, and that we have not shipped it again.
-- Ask them to look the address over. A reply that it is right is enough, and then we send it again. If a line should change, they reply with the address they want.
-- Sign `Thanks,` then `East Peak`. Do not sign as a teammate.
+- Name the order and the return date when that date is known. Acknowledge the hassle. Do not say the package has not shipped again.
+- Ask them to confirm the address or send a correction.
+- Sign `Thanks for your help!` then `East Peak`. Do not sign as a teammate.
 
 A saved draft is waiting for a person to review it. It does not reship the order and it does not clear the alert.
