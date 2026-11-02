@@ -7,7 +7,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from carrier_wait import assess_awaiting_carrier_processing  # noqa: E402
+from carrier_wait import (  # noqa: E402
+    assess_awaiting_carrier_processing,
+    at_risk_job_action,
+)
 
 NOW = datetime(2026, 11, 2, 2, 47, tzinfo=timezone.utc)
 SHIPPED = "2026-10-10T17:57:31+00:00"
@@ -25,6 +28,7 @@ def order(**overrides):
         "shipped_at": SHIPPED,
         "updated_at": AT_RISK,
         "returns": [],
+        "actions_required": {"at_risk": True},
     }
     payload.update(overrides)
     return payload
@@ -66,10 +70,18 @@ class CarrierWaitTests(unittest.TestCase):
         self.assertTrue(result.in_stage)
         self.assertFalse(result.stuck)
 
-    def test_exactly_seven_days_is_not_more_than_seven(self):
+    def test_exactly_ten_days_is_not_more_than_ten(self):
         result = assess_awaiting_carrier_processing(
             order(),
-            now=datetime.fromisoformat(SHIPPED) + timedelta(days=7),
+            now=datetime.fromisoformat(SHIPPED) + timedelta(days=10),
+        )
+
+        self.assertFalse(result.stuck)
+
+    def test_eight_days_is_not_stuck(self):
+        result = assess_awaiting_carrier_processing(
+            order(),
+            now=datetime.fromisoformat(SHIPPED) + timedelta(days=8),
         )
 
         self.assertFalse(result.stuck)
@@ -130,6 +142,36 @@ class CarrierWaitTests(unittest.TestCase):
 
         self.assertTrue(result.in_stage)
         self.assertIsNone(result.stuck)
+
+    def test_at_risk_order_past_ten_days_is_cloned_and_the_original_is_resolved(self):
+        assessment = assess_awaiting_carrier_processing(order(), now=NOW)
+        action = at_risk_job_action(order(), assessment)
+
+        self.assertTrue(assessment.stuck)
+        self.assertEqual(action["action"], "clone_and_resolve_original")
+        self.assertTrue(action["clone"])
+        self.assertTrue(action["resolve_original"])
+        self.assertEqual(action["resolve_as"], "undeliverable")
+
+    def test_order_that_is_not_at_risk_is_not_cloned(self):
+        payload = order(actions_required={"at_risk": False})
+        assessment = assess_awaiting_carrier_processing(payload, now=NOW)
+        action = at_risk_job_action(payload, assessment)
+
+        self.assertTrue(assessment.stuck)
+        self.assertIsNone(action["action"])
+        self.assertFalse(action["clone"])
+
+    def test_at_risk_order_under_ten_days_is_not_cloned(self):
+        payload = order()
+        assessment = assess_awaiting_carrier_processing(
+            payload,
+            now=datetime.fromisoformat(SHIPPED) + timedelta(days=8),
+        )
+        action = at_risk_job_action(payload, assessment)
+
+        self.assertFalse(assessment.stuck)
+        self.assertIsNone(action["action"])
 
 
 if __name__ == "__main__":
