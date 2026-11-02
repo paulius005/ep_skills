@@ -153,9 +153,18 @@ On `draft_address_check` only:
 1. Re-read the return. If the status is no longer exactly `returned`, stop and say so. Do not draft from a stale button.
 2. Re-read the order. The recipient is `customer_email` when the ship-to email is empty. If both are present and differ, or neither is present, stop and ask which address to use. Never guess.
 3. The From account must be `hello@runeastpeak.com`. If that mailbox is not the one available, stop. Do not draft from another account.
-4. Search `hello@runeastpeak.com` for an existing unsent draft for this order whose subject is the subject below, or an older subject `shipping issue with order: #{order_number}` or `Can you double-check the address for order {order_number}?`. Update that draft in place, including the subject. Do not save a second copy. If a matching message was already sent, stop and report it. Do not send another. Use the subject and body below. Capitalize the subject. Keep the note warm, natural, and short. Say the order was returned and acknowledge the hassle. Do not write `We have not shipped it again.` Include the ship-to address and one next step: confirm it or send a correction. Use only verified facts. Do not guess a return reason or promise a ship date. Include `{returned_date}` only when the return record has that date.
+4. Search `hello@runeastpeak.com` for an existing unsent draft for this order. That includes the subject below, any earlier returned-order draft for the same order, and the older subjects `shipping issue with order: #{order_number}` and `Can you double-check the address for order {order_number}?`. Update the newest unsent draft in place, including the subject. Do not open another draft while one is still unsent, and do not save a second copy. If a matching message was already sent, stop and report it. Do not send another and do not start a second draft cycle. Use the subject and body below. Capitalize the subject. Keep the note warm, natural, and short. Say the order was returned and acknowledge the hassle. Do not write `We have not shipped it again.` Include the ship-to address and one next step: confirm it or send a correction. Use only verified facts. Do not guess a return reason or promise a ship date. Include `{returned_date}` only when the return record has that date.
 5. Save **DRAFT ONLY — NEVER SEND**. Read back the draft id, From, To, subject, body, and unsent state.
 6. Reply on that order message: `The draft email is in your inbox.` Include the draft link when one exists. Do not include the address, email, or phone on that order card. Do not say the draft was sent. When a person asks to see the draft, post it with `draft_quote_blocks` and say it was not sent.
+
+Guidelines for every returned-to-sender draft. Adapt the template to the order. Do not send it.
+
+- Use a properly capitalized, descriptive subject.
+- Keep the tone warm, natural, and concise.
+- Briefly explain that the order was returned and acknowledge the inconvenience.
+- Avoid abrupt wording such as "We have not shipped it again." and "We haven't reshipped it."
+- Include the shipping address and one clear next step: confirm it or provide a correction.
+- Use only verified facts. Do not speculate about the return reason or promise a shipping date.
 
 Subject, only for a returned order:
 
@@ -183,7 +192,7 @@ Thanks for your help!
 East Peak
 ```
 
-Use the first name from the verified recipient. If it cannot be split safely, open with "Hi there,". `{returned_date}` is the return's received date in `America/Los_Angeles`, written as a calendar date. When the return record has no date, write `was returned to us` with no `on` clause. The address lines are the order's current ship-to, copied exactly. Do not claim the address failed validation, and do not invent a carrier reason. The known return reason may be unknown.
+Use the first name from the verified recipient. If it cannot be split safely, open with "Hi there,". `{returned_date}` is the return's `received_at` in `America/Los_Angeles`, written as Month D, YYYY, such as October 21, 2026. If that date is missing, omit " on {returned_date}" and write `was returned to us` with no `on` clause. The address lines are the order's current ship-to, copied exactly. Omit street2 when it is empty. Do not claim the address failed validation, and do not invent a carrier reason. Leave `reason_unknown` and any other unverified return reason out of the draft.
 
 Say the order was returned. Do not write `We have not shipped it again.` or `We haven't reshipped it.` Do not use `If that's right, reply and let us know. If it isn't, reply with the corrected address.`
 
