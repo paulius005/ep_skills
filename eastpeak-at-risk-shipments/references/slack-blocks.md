@@ -110,6 +110,10 @@ A `Guest: Name, ...` line keeps `Guest: Name` as `After`. Any other over-long li
 
 When address line 2 is over 50 characters, the card context line is `Address 2 exceeded limit of 50 characters.` The suggested fix is a separate reply under that order, not a field on the card and not a button. The card omits the street. That reply shows `Before:` and `After:` for the lines that would change. Leave email and phone out of both messages. See [Address line limits](../SKILL.md#address-line-limits).
 
+When a verified replacement exists and the original order is still at risk, set `replacement_pending_resolve` on that shipment. The context line is `Order has been cloned. Please Resolve At Risk`. That is the suggested action. It is a context element, not a button, and it does not clear the alert. It wins over `Service unchanged — shipment already en route.` A returned order still uses the draft context line instead.
+
+Every daily at-risk card checks order number `{order}-R1` on the same store before it is written. When that order exists, set `daily_cloned`. The daily readout is `Order has been cloned.` That check does not create another order. A returned order still uses the draft context line.
+
 ## Buttons
 
 | Button | When | Behavior |
@@ -118,7 +122,7 @@ When address line 2 is over 50 characters, the card context line is `Address 2 e
 | Draft an email to the customer | Return status exactly `returned`, and no saved draft yet | `action_id` `draft_address_check`. Saves an unsent draft from `hello@runeastpeak.com`. Does not send. |
 | USPS Priority | Verified editable Hawaii or Alaska, and not returned, and not en route or packed | `action_id` `usps_priority`. Does not use FlavorCloud. |
 
-Returned wins over USPS Priority. Do not include both. Do not add a button that edits the address. After the draft is saved and read back, omit the draft button and set the context line to `The draft email is in your inbox.` Before that, the context line is `Draft an email to the customer.` When a replacement was queued and the original could not be resolved, set `cloned` and use the context line `Order has been cloned. Please Resolve At Risk`.
+Returned wins over USPS Priority. Do not include both. Do not add a button that edits the address. After the draft is saved and read back, omit the draft button and set the context line to `The draft email is in your inbox.` Before that, the context line is `Draft an email to the customer.` When a replacement was queued and the original could not be resolved, set `cloned` and use the context line `Order has been cloned. Please Resolve At Risk`. The daily readout, after the `{order}-R1` check finds that order, is `Order has been cloned.`
 
 Put the button in `actions.elements` only when its gate passes. Slack allows five. `value` is a JSON string under 2000 characters. `action_id` is unique inside the actions block.
 

@@ -18,6 +18,8 @@ ALLOWED_STORES = {"19002", "18969"}
 ADDRESS_LINE_LIMIT = 50
 ADDRESS_DISPLAY_MAX = 300
 CONTEXT_MAX = 75
+CLONED_RESOLVE_ACTION = "Order has been cloned. Please Resolve At Risk"
+DAILY_CLONED_READOUT = "Order has been cloned."
 SECTION_MAX = 3000
 BUTTON_VALUE_MAX = 2000
 PACIFIC = ZoneInfo("America/Los_Angeles")
@@ -162,6 +164,8 @@ class Shipment:
     draft_saved: bool = False
     service_changed: bool = False
     cloned: bool = False
+    replacement_pending_resolve: bool = False
+    daily_cloned: bool = False
     context: str | None = None
     shipmonk_url: str | None = None
 
@@ -367,8 +371,49 @@ def address_over_limit(shipment: Shipment) -> bool:
     return "address" in shipment.flags and len(street2) > ADDRESS_LINE_LIMIT
 
 
+def replacement_order_number(order_number: str) -> str:
+    """Return the one replacement order number for an original order."""
+    number = str(order_number).strip()
+    if not number or number.endswith("-R1"):
+        raise ValueError("order number must be the original order")
+    return f"{number}-R1"
+
+
+def existing_clone_number(order_number: str, known_order_numbers) -> str | None:
+    """Return `{order}-R1` when that order number is already known.
+
+    The daily readout calls this for every at-risk shipment. A replacement
+    order is not checked for a further clone. This function does not call
+    ShipMonk and does not create an order.
+    """
+    try:
+        wanted = replacement_order_number(order_number)
+    except ValueError:
+        return None
+    known = {
+        str(item).strip()
+        for item in (known_order_numbers or [])
+        if str(item).strip()
+    }
+    if wanted in known:
+        return wanted
+    return None
+
+
+def apply_daily_clone_check(shipment: Shipment, known_order_numbers) -> bool:
+    """Set `daily_cloned` from the known order numbers. Return whether it was set."""
+    shipment.daily_cloned = existing_clone_number(
+        shipment.order_number, known_order_numbers
+    ) is not None
+    return shipment.daily_cloned
+
+
 def context_line(shipment: Shipment) -> str:
-    if shipment.context:
+    if shipment.daily_cloned and shipment.return_status != "returned":
+        line = DAILY_CLONED_READOUT
+    elif shipment.replacement_pending_resolve and shipment.return_status != "returned":
+        line = CLONED_RESOLVE_ACTION
+    elif shipment.context:
         line = shipment.context
     elif shipment.cloned:
         line = "Order has been cloned. Please Resolve At Risk"
@@ -631,6 +676,8 @@ def shipment_from_dict(data: dict) -> Shipment:
         draft_saved=bool(data.get("draft_saved", False)),
         service_changed=bool(data.get("service_changed", False)),
         cloned=bool(data.get("cloned", False)),
+        replacement_pending_resolve=bool(data.get("replacement_pending_resolve", False)),
+        daily_cloned=bool(data.get("daily_cloned", False)),
         context=data.get("context"),
         shipmonk_url=data.get("shipmonk_url"),
     )
