@@ -67,6 +67,10 @@ A mapped reply is still not approval for a new charge. Unknown or uncovered fees
 
 When a person asks what is wrong with an address, or asks how to correct it before they approve a change, the reply shows the before and after. Copy every ship-to line that would change. Label the old text Before and the new text After. If a line would be removed, show the old line and say the new line is empty. Do not describe the line only by its length. Leave email and phone out. Do not change the order in that proposal. Apply the change only after the person says to.
 
+## Stuck duration
+
+A question about how long an order has been stuck is a conversation. Answer it from the order logs in [How long an order has been stuck](../SKILL.md#how-long-an-order-has-been-stuck). Do not answer it from `processing_status`, `shipped_at`, or `updated_at`. The clock starts at the log row that entered the current step. If the app JWT or the numeric order id is missing, say the logs were not read and do not invent the duration. Leave address text out of the reply. The duration does not by itself change the shipment.
+
 ## Skill feedback
 
 A reply in this channel that asks to change the skill is skill feedback. It is not one of the fixed shipment labels above. Do not update the ShipMonk shipment from the feedback alone, and do not auto-merge orders or shipments because of it. If the same message also asks for one named order's fixed draft or shipment action, do that fixed action too.
