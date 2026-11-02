@@ -11,7 +11,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from slack_poster.blocks import (  # noqa: E402
     ADDRESS_LINE_LIMIT,
     CLONED_RESOLVE_ACTION,
+    DAILY_CLONED_READOUT,
     Shipment,
+    apply_daily_clone_check,
+    existing_clone_number,
     address_section_text,
     context_line,
     conversation_blocks,
@@ -168,6 +171,22 @@ class LayoutTests(unittest.TestCase):
         )
         self.assertEqual(context_line(returned), "Draft an email to the customer.")
 
+    def test_daily_readout_says_the_order_has_been_cloned(self):
+        self.assertEqual(DAILY_CLONED_READOUT, "Order has been cloned.")
+        self.assertLessEqual(len(DAILY_CLONED_READOUT), 75)
+        self.assertEqual(existing_clone_number("8274", ["8274", "8274-R1"]), "8274-R1")
+        self.assertIsNone(existing_clone_number("8257", ["8257", "8274-R1"]))
+        self.assertIsNone(existing_clone_number("8274-R1", ["8274-R1", "8274-R1-R1"]))
+        order = shipment(order_number="8274", state="CA", service="ShipMonk Standard")
+        self.assertTrue(apply_daily_clone_check(order, ["8274", "8274-R1"]))
+        self.assertEqual(context_line(order), "Order has been cloned.")
+        self.assertEqual(order_blocks(order)[1]["elements"][0]["text"], "Order has been cloned.")
+        untouched = shipment()
+        self.assertFalse(apply_daily_clone_check(untouched, ["8257"]))
+        self.assertEqual(context_line(untouched), "Service unchanged — shipment already en route.")
+        returned = shipment(return_status="returned", daily_cloned=True)
+        self.assertEqual(context_line(returned), "Draft an email to the customer.")
+
     def test_context_elements_stay_within_slack_limit(self):
         for name in ("in_transit.json", "address_and_returned.json"):
             for message in plan_messages(load(name)):
@@ -260,6 +279,18 @@ class OmissionTests(unittest.TestCase):
             self.assertNotIn(shipment.street1, blob)
         self.assertNotIn("buyer-", blob)
         self.assertNotIn("555-", blob)
+
+    def test_a_cloned_order_asks_a_person_to_resolve_at_risk(self):
+        order = shipment(cloned=True, processing_status="en_route", state="CA")
+        self.assertEqual(
+            context_line(order),
+            "Order has been cloned. Please Resolve At Risk",
+        )
+        blocks = order_blocks(order)
+        self.assertEqual(
+            blocks[1]["elements"][0]["text"],
+            "Order has been cloned. Please Resolve At Risk",
+        )
 
     def test_context_cannot_carry_an_email_or_phone(self):
         order = shipment(context="Email buyer-8257@example.com")
