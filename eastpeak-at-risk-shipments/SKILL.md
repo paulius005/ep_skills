@@ -39,15 +39,15 @@ Report every attempted or taken action in this branch, including successful repl
 
 ### Replacement after 10 days on Awaiting Carrier Processing
 
-The owner ordered this path on 2026-11-01 and set the wait to 10 days on 2026-11-02. It sits beside the halted-reason branch. It does not turn every in-transit order into a replacement. Use it when this job surfaces an order with `actions_required.at_risk` true and `assess_awaiting_carrier_processing` says it is stuck. That assessment covers `processing_status` `awaiting_carrier_processing` or `en_route`, with no return status `returned`, for more than 10 days after submission. If that duration cannot be verified, do not clone. If the app JWT is missing, do not clone, because the original cannot be resolved.
+The owner ordered this path on 2026-11-01 and set the wait to 10 days on 2026-11-02. It sits beside the halted-reason branch. It does not turn every in-transit order into a replacement. Use it when this job surfaces an order with `actions_required.at_risk` true and `assess_awaiting_carrier_processing` says it is stuck. That assessment covers `processing_status` `awaiting_carrier_processing` or `en_route`, with no return status `returned`, for more than 10 days after submission. If that duration cannot be verified, do not clone. A missing app JWT does not block this one replacement. After the replacement is read back, leave the original alert on and use the suggested action below. Do not say the alert was cleared.
 
 1. Create one replacement with `POST /v1/integrations/order`. Use a new `order_number` `{order}-R1` and a new `order_key` `{order}-reship-YYYYMMDD`. Keep the same store, warehouse, ship-to, sku, quantity, price, and requested service. Create it as `onHold`. Do not reuse the original `order_key`.
 2. Read it back. If the sku, quantity, destination state, or store does not match, stop and do not submit.
 3. Submit that new key with `POST /v1/integrations/submit-order`. On 2026-11-01, sending `unfulfilled` on the upsert left the order `onHold`. The submit call moved it to `queued_to_submit`. `queued_to_submit` is not shipped.
-4. Then resolve the original as undeliverable with the app call below. This path uses `undeliverable` even when the order has no return. If the app JWT is missing, leave the original alert on and say so. Do not cancel the original.
-5. One replacement. If `{order}-R1` already exists, do not create another. Do not send email. Do not use FlavorCloud.
+4. Then resolve the original as undeliverable with the app call below. This path uses `undeliverable` even when the order has no return. If the app JWT is missing, leave the original alert on. Do not cancel the original. The suggested action in the Block Kit reply is `Order has been cloned. Please Resolve At Risk`. That sentence is also the order-card context line. It asks a person to use the Resolve At Risk button. It does not clear the alert.
+5. One replacement. If `{order}-R1` already exists, do not create another. Do not send email. Do not use FlavorCloud. While that replacement exists and the original is still at risk, keep the same suggested action.
 
-Order 8274 did not match this status. On 2026-11-01 it was fulfilled and `en_route`, and OnTrac had reported that the package could not be located. The owner ordered the clone anyway. The replacement is `8274-R1`, order key `8274-reship-20261101`, store 19002, sku `006-IBW2-XL` quantity 1, California, requested service Standard. Readback was `unfulfilled` and `queued_to_submit`. Original 8274 stayed fulfilled, `en_route`, and `at_risk`, with `updated_at` `2026-10-21T06:35:22+00:00`. It was not resolved.
+Order 8274 did not match the halted reason. On 2026-11-01 it was fulfilled and `en_route`, and OnTrac had reported that the package could not be located. The owner ordered the clone anyway. The replacement is `8274-R1`, order key `8274-reship-20261101`, store 19002, sku `006-IBW2-XL` quantity 1, California, requested service Standard. Readback was `unfulfilled` and `queued_to_submit`. Original 8274 stayed fulfilled, `en_route`, and `at_risk`, with `updated_at` `2026-10-21T06:35:22+00:00`. It was not resolved. A re-read on 2026-11-02 found the same replacement still `queued_to_submit` and the original still `at_risk`. No second clone was created. The suggested action stays `Order has been cloned. Please Resolve At Risk`.
 
 ### Other reasons: Gmail DRAFT ONLY, then Slack
 
@@ -103,6 +103,7 @@ Fixed context lines on the order card:
 - Returned, before a draft: `Draft an email to the customer.`
 - After that draft is saved and read back: `The draft email is in your inbox.`
 - Address line 2 over 50 characters: `Address 2 exceeded limit of 50 characters.`
+- A verified replacement exists and the original is still at risk: `Order has been cloned. Please Resolve At Risk`. Set `replacement_pending_resolve` on that order card. Do not add a button for it.
 
 The returned-order customer draft has one subject and one body, in [the listener contract](references/slack-listener.md). Subject: `Address Confirmation for Your East Peak Order #{order_number}`. Say the order was returned. Do not write `We have not shipped it again.` Keep one unsent draft per order and update it in place, including when the subject changes. Do not save a second copy. If a matching message was already sent, stop. A request to "drop a new draft" means new wording in that one unsent draft, not a second draft and not a send.
 
@@ -184,13 +185,13 @@ On 2026-11-01, order 8274 (store `19002`, order key `18933995667587`) was fulfil
 
 When this job surfaces that order, and `at_risk` is true, and the assessment is stuck, `at_risk_job_action` returns `clone_and_resolve_original`. Clone one replacement. Keep the recipient, items, quantities, and store. Do not capture a new payment from the customer. Do not clone if a matching replacement already exists. After the replacement is read back, resolve the original order, not the clone, with `POST https://app.shipmonk.com/api/v1/orders/{shipmonkOrderId}/resolve-at-risk` and `{"resolveAs":"undeliverable"}`.
 
-"At risk" is the flag on the original. It is not a `resolveAs` value. The dialog values are `enRoute`, `shippedUntrackable`, `delivered`, and `undeliverable`. This replacement uses `undeliverable` for the original. The app JWT is required for that call. The integrations key returns HTTP 401. If the JWT is missing, do not clone: the original would stay open next to the replacement. Say the shipment was not changed. A saved assessment does not itself submit the clone.
+"At risk" is the flag on the original. It is not a `resolveAs` value. The dialog values are `enRoute`, `shippedUntrackable`, `delivered`, and `undeliverable`. This replacement uses `undeliverable` for the original. The app JWT is required for that call. The integrations key returns HTTP 401. If the JWT is missing, still keep the one replacement that was read back, and do not create a second one. The original stays at risk beside it. The suggested action in the Block Kit reply, and the order-card context line, is `Order has been cloned. Please Resolve At Risk`. That sentence asks a person to use the Resolve At Risk button. It does not clear the alert. A saved assessment does not itself submit the clone.
 
 Log text can contain a ship-to change. Do not copy an address, email, or phone from a log into Slack, this skill, or the incident ledger. Keep the timestamp, the user label, and a short description of the event.
 
 On 2026-11-01 the logs page for order 8274 showed app order id `2228133536` (store `19002`, order key `18933995667587`). The timeline's active step was Awaiting Carrier Processing. Picked Up was dated 10/10/2026. The pickup log was 10/10/2026 8:38 PM EDT: marked the order picked up. The at-risk log was 10/21/2026 2:35 AM EDT. The stuck clock is the pickup log. This runtime could not read those rows through the API. The page was the source. No shipment was changed from that read.
 
-A duration does not pass the halted-reason, duplicate, original, or cost gates. It does not authorize a clone, a resolve-at-risk call, or a new charge.
+A duration does not pass the halted-reason, duplicate, original, or cost gates, and it does not authorize a new charge. The 10-day path above is what authorizes the one replacement when the assessment is stuck. A missing app JWT does not clear the original. The suggested action stays `Order has been cloned. Please Resolve At Risk`.
 
 ### Resolve at risk as undeliverable
 
@@ -230,6 +231,7 @@ Context lines:
 - Return status exactly `returned`, before a draft exists: `Draft an email to the customer.`
 - After that draft is saved and read back: `The draft email is in your inbox.` Omit the draft button. The draft is unsent.
 - Address line 2 longer than 50 characters: `Address 2 exceeded limit of 50 characters.`
+- A verified `{order}-R1` replacement exists and the original `at_risk` flag is still true: `Order has been cloned. Please Resolve At Risk`. This wins over the in-transit sentence. It is a suggestion for a person. It is not a completed resolve.
 
 The plain-text `text` field is the notification fallback. It carries the same facts and does not invent a button.
 
@@ -255,7 +257,7 @@ The plain-text `text` field is the notification fallback. It carries the same fa
 - `automation_rule`: open the order and clear the automation-rule hold.
 - `value_added_service_problem`: fix the value-added service, or change the order if it cannot be done.
 - `at_risk`, and the order is still editable and is not Hawaii or Alaska: check whether it can still make the ship-by date. Treat a faster service as a suggestion until someone approves the change.
-- `at_risk`, and the order is already packed, en route, or otherwise not editable: leave the service alone. The context line is `Service unchanged — shipment already en route.` If the return stage is `returned`, use `Draft an email to the customer.` and the draft button instead.
+- `at_risk`, and the order is already packed, en route, or otherwise not editable: leave the service alone. The context line is `Service unchanged — shipment already en route.` If a verified replacement exists and the original is still at risk, use `Order has been cloned. Please Resolve At Risk` instead. If the return stage is `returned`, use `Draft an email to the customer.` and the draft button instead. The returned draft wins over the cloned-order sentence.
 
 If several flags are true, show each as a status tag and use the blocking one for the context line or action button. If the order is not editable, do not suggest changing the address, the service, or the items. An unsubmitted order with the address flag can still get the address-line follow-up below.
 

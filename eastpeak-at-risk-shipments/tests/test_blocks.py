@@ -10,6 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from slack_poster.blocks import (  # noqa: E402
     ADDRESS_LINE_LIMIT,
+    CLONED_RESOLVE_ACTION,
     Shipment,
     address_section_text,
     context_line,
@@ -134,6 +135,38 @@ class LayoutTests(unittest.TestCase):
             "Service unchanged — shipment already en route.",
         )
         self.assertEqual(second.blocks[3]["elements"][0]["text"], "Store 19002 · Fulfilled")
+
+    def test_cloned_order_asks_a_person_to_resolve_at_risk(self):
+        shipment = Shipment(
+            order_number="8274",
+            store_id="19002",
+            order_key="18933995667587",
+            order_status="fulfilled",
+            processing_status="en_route",
+            state="CA",
+            flags=["at_risk"],
+            service="ShipMonk Standard",
+            replacement_pending_resolve=True,
+        )
+        self.assertEqual(CLONED_RESOLVE_ACTION, "Order has been cloned. Please Resolve At Risk")
+        self.assertLessEqual(len(CLONED_RESOLVE_ACTION), 75)
+        self.assertEqual(context_line(shipment), CLONED_RESOLVE_ACTION)
+        blocks = order_blocks(shipment)
+        self.assertEqual(blocks[1]["elements"][0]["text"], CLONED_RESOLVE_ACTION)
+        self.assertNotIn("actions", [block["type"] for block in blocks])
+        returned = Shipment(
+            order_number="8257",
+            store_id="19002",
+            order_key="18927830040707",
+            order_status="fulfilled",
+            processing_status="en_route",
+            state="HI",
+            flags=["at_risk"],
+            service="USPS Priority Mail",
+            return_status="returned",
+            replacement_pending_resolve=True,
+        )
+        self.assertEqual(context_line(returned), "Draft an email to the customer.")
 
     def test_context_elements_stay_within_slack_limit(self):
         for name in ("in_transit.json", "address_and_returned.json"):

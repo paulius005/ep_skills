@@ -110,6 +110,8 @@ A `Guest: Name, ...` line keeps `Guest: Name` as `After`. Any other over-long li
 
 When address line 2 is over 50 characters, the card context line is `Address 2 exceeded limit of 50 characters.` The suggested fix is a separate reply under that order, not a field on the card and not a button. The card omits the street. That reply shows `Before:` and `After:` for the lines that would change. Leave email and phone out of both messages. See [Address line limits](../SKILL.md#address-line-limits).
 
+When a verified replacement exists and the original order is still at risk, set `replacement_pending_resolve` on that shipment. The context line is `Order has been cloned. Please Resolve At Risk`. That is the suggested action. It is a context element, not a button, and it does not clear the alert. It wins over `Service unchanged — shipment already en route.` A returned order still uses the draft context line instead.
+
 ## Buttons
 
 | Button | When | Behavior |

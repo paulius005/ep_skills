@@ -18,6 +18,7 @@ ALLOWED_STORES = {"19002", "18969"}
 ADDRESS_LINE_LIMIT = 50
 ADDRESS_DISPLAY_MAX = 300
 CONTEXT_MAX = 75
+CLONED_RESOLVE_ACTION = "Order has been cloned. Please Resolve At Risk"
 SECTION_MAX = 3000
 BUTTON_VALUE_MAX = 2000
 PACIFIC = ZoneInfo("America/Los_Angeles")
@@ -161,6 +162,7 @@ class Shipment:
     street2: str | None = None
     draft_saved: bool = False
     service_changed: bool = False
+    replacement_pending_resolve: bool = False
     context: str | None = None
     shipmonk_url: str | None = None
 
@@ -367,7 +369,9 @@ def address_over_limit(shipment: Shipment) -> bool:
 
 
 def context_line(shipment: Shipment) -> str:
-    if shipment.context:
+    if shipment.replacement_pending_resolve and shipment.return_status != "returned":
+        line = CLONED_RESOLVE_ACTION
+    elif shipment.context:
         line = shipment.context
     elif shipment.draft_saved:
         line = "The draft email is in your inbox."
@@ -627,6 +631,7 @@ def shipment_from_dict(data: dict) -> Shipment:
         street2=data.get("street2"),
         draft_saved=bool(data.get("draft_saved", False)),
         service_changed=bool(data.get("service_changed", False)),
+        replacement_pending_resolve=bool(data.get("replacement_pending_resolve", False)),
         context=data.get("context"),
         shipmonk_url=data.get("shipmonk_url"),
     )
