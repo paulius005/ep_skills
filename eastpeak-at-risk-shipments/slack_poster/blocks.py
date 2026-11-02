@@ -161,6 +161,7 @@ class Shipment:
     street2: str | None = None
     draft_saved: bool = False
     service_changed: bool = False
+    cloned: bool = False
     context: str | None = None
     shipmonk_url: str | None = None
 
@@ -369,6 +370,8 @@ def address_over_limit(shipment: Shipment) -> bool:
 def context_line(shipment: Shipment) -> str:
     if shipment.context:
         line = shipment.context
+    elif shipment.cloned:
+        line = "Order has been cloned. Please Resolve At Risk"
     elif shipment.draft_saved:
         line = "The draft email is in your inbox."
     elif shipment.return_status == "returned":
@@ -627,6 +630,7 @@ def shipment_from_dict(data: dict) -> Shipment:
         street2=data.get("street2"),
         draft_saved=bool(data.get("draft_saved", False)),
         service_changed=bool(data.get("service_changed", False)),
+        cloned=bool(data.get("cloned", False)),
         context=data.get("context"),
         shipmonk_url=data.get("shipmonk_url"),
     )

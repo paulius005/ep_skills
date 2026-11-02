@@ -118,7 +118,7 @@ When address line 2 is over 50 characters, the card context line is `Address 2 e
 | Draft an email to the customer | Return status exactly `returned`, and no saved draft yet | `action_id` `draft_address_check`. Saves an unsent draft from `hello@runeastpeak.com`. Does not send. |
 | USPS Priority | Verified editable Hawaii or Alaska, and not returned, and not en route or packed | `action_id` `usps_priority`. Does not use FlavorCloud. |
 
-Returned wins over USPS Priority. Do not include both. Do not add a button that edits the address. After the draft is saved and read back, omit the draft button and set the context line to `The draft email is in your inbox.` Before that, the context line is `Draft an email to the customer.`
+Returned wins over USPS Priority. Do not include both. Do not add a button that edits the address. After the draft is saved and read back, omit the draft button and set the context line to `The draft email is in your inbox.` Before that, the context line is `Draft an email to the customer.` When a replacement was queued and the original could not be resolved, set `cloned` and use the context line `Order has been cloned. Please Resolve At Risk`.
 
 Put the button in `actions.elements` only when its gate passes. Slack allows five. `value` is a JSON string under 2000 characters. `action_id` is unique inside the actions block.
 
