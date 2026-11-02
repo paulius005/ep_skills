@@ -208,33 +208,80 @@ def _context(text: str) -> dict:
     return {"type": "context", "elements": [{"type": "mrkdwn", "text": text}]}
 
 
+def _clean_bullet(bullet: str) -> str:
+    lines = [" ".join(line.split()) for line in str(bullet).splitlines()]
+    text = "\n".join(lines).strip()
+    if not text:
+        raise ValueError("bullet must not be empty")
+    return text
+
+
 def conversation_blocks(
     lead: str,
     lines: list[str] | None = None,
     note: str | None = None,
 ) -> tuple[str, list]:
-    """Block Kit for a human reply: a bold lead, bullet lines, and a short note.
+    """Bold lead, bullet lines, and a context note of at most 75 characters.
 
-    The note is the context line and must be 75 characters or fewer.
-    Email, phone, and street stay out unless the caller is quoting a draft
-    the person asked to see. This function does not post.
+    Returns the plain-text fallback and the Block Kit blocks. A bullet may
+    keep line breaks so a quoted draft stays readable. This function does not post.
     """
-    lead = " ".join((lead or "").replace("*", "").split())
-    if not lead:
-        raise ValueError("lead is required")
-    cleaned = []
-    for line in lines or []:
-        item = " ".join(str(line).lstrip("•*- ").split())
-        if item:
-            cleaned.append(item)
-    blocks = [_section(f"*{lead}*")]
-    if cleaned:
-        blocks.append(_section("\n".join(f"• {item}" for item in cleaned)))
-    if note:
-        note = " ".join(note.split())
-        blocks.append(_context(note))
-    text = "\n".join([lead, *cleaned, *([note] if note else [])])
+    sentence = " ".join((lead or "").replace("*", "").split())
+    if not sentence or "\n" in (lead or ""):
+        raise ValueError("lead must be one sentence")
+    if not lines:
+        raise ValueError("conversation needs at least one bullet")
+    cleaned = [_clean_bullet(line) for line in lines]
+    blocks = [
+        _section(f"*{sentence}*"),
+        _section("\n".join(f"• {item}" for item in cleaned)),
+    ]
+    if not note:
+        raise ValueError("note is required")
+    note = " ".join(note.split())
+    blocks.append(_context(note))
+    text = "\n".join([sentence, *cleaned, note])
     return text, blocks
+
+
+def draft_quote_blocks(subject: str, sender: str, recipient: str, body: str) -> tuple[str, list]:
+    """Show an unsent customer draft as the email. Do not turn its lines into bullets.
+
+    This function does not post and does not send the draft.
+    """
+    subject = " ".join((subject or "").replace("*", "").split())
+    sender = " ".join((sender or "").split())
+    recipient = " ".join((recipient or "").split())
+    if not subject or not sender or not recipient:
+        raise ValueError("subject, sender, and recipient are required")
+    lines = [" ".join(raw.split()) for raw in (body or "").replace("\r\n", "\n").split("\n")]
+    body_text = "\n".join(lines).strip("\n")
+    if not body_text.strip():
+        raise ValueError("body is required")
+    quoted = f"Subject: {subject}\nFrom: {sender}\nTo: {recipient}\n\n{body_text}"
+    if len(quoted) > SECTION_MAX:
+        raise ValueError("draft quote exceeds 3000 characters")
+    lead = "The unsent draft is ready for review."
+    note = "Not sent. The draft is in your inbox."
+    blocks = [
+        _section(f"*{lead}*"),
+        {
+            "type": "rich_text",
+            "elements": [
+                {
+                    "type": "rich_text_quote",
+                    "elements": [{"type": "text", "text": quoted}],
+                }
+            ],
+        },
+        _context(note),
+    ]
+    return f"{lead}\n{quoted}\n{note}", blocks
+
+
+def conversation_fallback(lead: str, lines: list[str], note: str) -> str:
+    text, _blocks = conversation_blocks(lead, lines, note)
+    return text
 
 
 def _scrub(text: str, shipment: Shipment) -> str:
