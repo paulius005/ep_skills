@@ -11,7 +11,7 @@ Keep these fields in the operational record:
 | Field | Contents |
 | --- | --- |
 | Identity | Stable incident key, account/store, order ID/link, original shipment ID/link, source queue and incident/episode evidence |
-| Original state | Observation time, exact live status/reason, destination state/country, original service, editability/handoff and tracking evidence references; item/quantity comparison references |
+| Original state | Observation time, exact live status/reason, destination state/country, original service, editability/handoff and tracking evidence references; item/quantity comparison references. When duration matters, the log `datetime` that entered the current step, and the active timeline title when known. Do not copy address text from a log |
 | Prior work | Replacement lineage/IDs/links and statuses; charges/commitments; inbox check of hello@runeastpeak.com for an unsent draft and for sent or received correspondence, with draft id or the exact blocker; Slack reporting date/timezone, verified workspace/channel/daily parent, the one order-message reply per shipment, and listener action-reply identifiers/permalinks |
 | Authorization | Current scope, direct owner approval reference, approved amount/currency/limit where applicable; never credentials |
 | Action | Stable action key (incident + operation + target), intended mutation, safe before/after comparison, claim owner/version and attempt state |
