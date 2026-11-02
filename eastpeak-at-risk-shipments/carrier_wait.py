@@ -1,4 +1,4 @@
-"""Decide whether an order has sat on Awaiting Carrier Processing for more than 7 days.
+"""Decide whether an order has sat on Awaiting Carrier Processing for more than 10 days.
 
 The integrations order is enough for the check. The app log list is used when
 it is present. This module does not call ShipMonk and does not change a shipment.
@@ -10,7 +10,10 @@ import re
 from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta, timezone
 
-THRESHOLD_DAYS = 7
+THRESHOLD_DAYS = 10
+# The Resolve At Risk dialog has no "at risk" value. After a replacement is
+# created, the original at-risk order is resolved as undeliverable.
+RESOLVE_ORIGINAL_AS = "undeliverable"
 THRESHOLD = timedelta(days=THRESHOLD_DAYS)
 
 # The order-page timeline has no En Route step. After Picked Up, the current
@@ -125,6 +128,35 @@ def assess_awaiting_carrier_processing(
         threshold_days=threshold_days,
         detail=detail,
     )
+
+
+def at_risk_job_action(order: dict, assessment: CarrierWaitAssessment) -> dict:
+    """Decide the daily-job action for one surfaced order.
+
+    Clone and resolve only when this job surfaced the order, `at_risk` is true,
+    and the carrier-wait assessment is stuck. The clone is the replacement.
+    The resolve call is for the original order, with resolveAs undeliverable.
+    """
+    flags = order.get("actions_required") or {}
+    at_risk = bool(flags.get("at_risk")) if isinstance(flags, dict) else False
+    if assessment.stuck is True and at_risk:
+        return {
+            "action": "clone_and_resolve_original",
+            "clone": True,
+            "resolve_original": True,
+            "resolve_as": RESOLVE_ORIGINAL_AS,
+            "detail": (
+                "At-risk order is past the carrier-wait threshold. "
+                "Clone a replacement, then resolve the original as undeliverable."
+            ),
+        }
+    return {
+        "action": None,
+        "clone": False,
+        "resolve_original": False,
+        "resolve_as": None,
+        "detail": "No clone. The order is not an at-risk shipment past the carrier-wait threshold.",
+    }
 
 
 def _stage_start(order: dict, logs: list) -> tuple[datetime | None, str | None]:
