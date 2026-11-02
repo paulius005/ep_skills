@@ -228,6 +228,18 @@ class OmissionTests(unittest.TestCase):
         self.assertNotIn("buyer-", blob)
         self.assertNotIn("555-", blob)
 
+    def test_a_cloned_order_asks_a_person_to_resolve_at_risk(self):
+        order = shipment(cloned=True, processing_status="en_route", state="CA")
+        self.assertEqual(
+            context_line(order),
+            "Order has been cloned. Please Resolve At Risk",
+        )
+        blocks = order_blocks(order)
+        self.assertEqual(
+            blocks[1]["elements"][0]["text"],
+            "Order has been cloned. Please Resolve At Risk",
+        )
+
     def test_context_cannot_carry_an_email_or_phone(self):
         order = shipment(context="Email buyer-8257@example.com")
         with self.assertRaises(ValueError):
