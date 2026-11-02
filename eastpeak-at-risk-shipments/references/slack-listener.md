@@ -69,7 +69,7 @@ When a person asks what is wrong with an address, or asks how to correct it befo
 
 ## Stuck duration
 
-A question about how long an order has been stuck is a conversation. Answer it from the order logs in [How long an order has been stuck](../SKILL.md#how-long-an-order-has-been-stuck). Do not answer it from `processing_status`, `shipped_at`, or `updated_at`. The clock starts at the log row that entered the current step. If the app JWT or the numeric order id is missing, say the logs were not read and do not invent the duration. Leave address text out of the reply. The duration does not by itself change the shipment.
+A question about how long an order has been stuck is a conversation. Answer it from the order logs in [How long an order has been stuck](../SKILL.md#how-long-an-order-has-been-stuck). For Awaiting Carrier Processing, use [the carrier-wait assessment](../SKILL.md#awaiting-carrier-processing-for-more-than-7-days). The clock is the pickup log, or `shipped_at` when that log was not read. Do not answer it from `updated_at` or `ordered_at`. If the order is on that step and both clocks are missing, say the duration is not established. Leave address text out of the reply. The duration does not by itself change the shipment.
 
 ## Skill feedback
 
