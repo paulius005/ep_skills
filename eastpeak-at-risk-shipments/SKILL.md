@@ -23,7 +23,7 @@ Before any mutation, read [the incident record and rerun contract](references/in
 
 Hawaii/Alaska means verified US destination state HI/AK (or its unambiguous full name), not a substring of a city or free-text note. Preserve the intended recipient, address, products, and quantities throughout. Selecting USPS Priority alone is not permission to release an otherwise held shipment.
 
-Do not treat `processing_status` as the shipment stage when the order lists any `returns[].rma`. For each RMA, read `GET /v1/integrations/returns-list?rma={rma}`. The return's `status` is the stage. Exact status `returned` means the shipment was returned, even when `processing_status` is still `en_route`. The built-in action is then the address-check draft button in [the Slack listener reference](references/slack-listener.md). Do not offer USPS Priority, and do not describe the shipment as rerouted. The button creates a Gmail draft from `hello@runeastpeak.com` and never sends it.
+Do not treat `processing_status` as the shipment stage when the order lists any `returns[].rma`. For each RMA, read `GET /v1/integrations/returns-list?rma={rma}`. The return's `status` is the stage. Exact status `returned` means the shipment was returned, even when `processing_status` is still `en_route`. The built-in action is then the address-check draft button in [the Slack listener reference](references/slack-listener.md). Do not offer USPS Priority, and do not describe the shipment as rerouted. The button creates a Gmail draft from `hello@runeastpeak.com` and never sends it. Clearing the at-risk flag on that returned order is a separate person-requested call, [resolve as undeliverable](#resolve-at-risk-as-undeliverable). The daily report does not make that call.
 
 Do not use FlavorCloud. It is not an East Peak option for this skill: do not select it, do not offer it as a button, and do not substitute it when USPS Priority is unavailable or eligibility is unclear.
 
@@ -83,6 +83,7 @@ These are the only shipment actions. Match the button or the exact label. Do not
 | `guarded clone and submit` | Clone and submit only after the halted-reason, duplicate, original, and cost gates. Otherwise name the gate that stopped it. |
 | `unsent Gmail draft` | Save or update one unsent draft. Never send it. |
 | `Draft an email to the customer`, `Draft address-check email`, or `draft_address_check` | Returned status only. Save or update the address-check draft below. Context note: `The draft email is in your inbox.` |
+| `resolve as undeliverable` | Returned status only. POST the app resolve-at-risk call below with `resolveAs` `undeliverable`. If the app JWT is missing, leave the alert and say so. |
 
 Fixed context lines on the order card:
 
@@ -97,7 +98,7 @@ If an older unsent draft with the previous subject is still in the mailbox, leav
 
 ### Flexible human replies
 
-Any other @mention is a conversation. `classify` returns `action: null` and `reason: conversation`. Answer the question. Do not change a shipment unless the message also uses a fixed label above for one order.
+Any other @mention is a conversation. `classify` returns `action: null` and `reason: conversation`. Answer the question. Do not change a shipment unless the message also uses a fixed label above for one order, or it asks to resolve at risk for one returned order. That resolve request is [resolve as undeliverable](#resolve-at-risk-as-undeliverable). A request to learn that call, or to change this skill, does not POST it.
 
 Fixed conversation patterns, still written as a flexible reply:
 
@@ -125,6 +126,7 @@ These replies are the built-in shipment actions. A button click uses the `action
 - Reply text **`guarded clone and submit`**: the replacement branch, and only when the exact live reason is `halted awaiting carrier processing`. Clone and submit only after the duplicate, original, and cost gates. For HI/AK, set USPS Priority on the eligible replacement before submission. Do not create a customer draft for a successful halted replacement unless separately requested.
 - Reply text **`unsent Gmail draft`**: the draft branch for every reason other than that exact halted reason. If the destination is verified HI/AK and the shipment is still editable, select and verify USPS Priority first, then save the draft. **DRAFT ONLY — NEVER SEND.**
 - Button `draft_address_check`, or reply text **`Draft an email to the customer`** or **`Draft address-check email`**: only when the return status is exactly `returned`. Save the unsent draft from `hello@runeastpeak.com` defined in the listener contract. Do not send it, and do not change the shipping service. Then set the context line to `The draft email is in your inbox.`
+- Reply text **`resolve as undeliverable`**, or a request to resolve at risk / clear the at-risk flag for one returned order: the [resolve-at-risk call](#resolve-at-risk-as-undeliverable). One order. Do not change the shipping service and do not send email.
 
 Any other @mention is the flexible reply in [Reply baseline](#reply-baseline). It maps to no shipment action by itself. Answer it, including when the message names no order. A channel message or thread reply with no @mention gets no Slack message. Every post from East Peak Operations is ignored. Do not invent a shipment action from free text. Do not auto-merge orders, shipments, incidents, or Slack messages. One shipment change applies to one order. If a shipment change names zero orders or more than one, ask which order and do not guess. A reply is not owner approval for a new charge; the cost gate still applies.
 
@@ -142,7 +144,23 @@ Call ShipMonk with curl, or with another client whose User-Agent is not Python-u
 
 Read orders with the documented `GET /v1/integrations/orders-list`. The list has no Action Required query parameter. Page the account (or stores `19002` and `18969`) and keep orders where at least one `actions_required` flag is true. Do not keep an order only because `at_risk` is true, and do not drop an order because `at_risk` is false. On 2026-10-30 a full read returned 5629 orders, the same total as the app, with 4 orders having any flag true, while the app badge showed 5. Reconcile that difference before acting. The documented processing status `awaiting_carrier_processing` is not, by itself, the exact reason `halted awaiting carrier processing`. Confirm the exact live reason before the replacement branch.
 
-The documented order write is the upsert `POST /v1/integrations/order`, not a partial PATCH. Retrieve and reconcile the complete required representation and preserve fields before writing, then read the order back. Never invent endpoints, payload fields, idempotency headers, or a USPS Priority service id. A shipping method on the order has an integer `id` and a `name`; use an id verified from the live account, not a guessed constant. If semantics or preservation cannot be established, stop the API mutation and flag it.
+The documented order write is the upsert `POST /v1/integrations/order`, not a partial PATCH. Retrieve and reconcile the complete required representation and preserve fields before writing, then read the order back. Never invent endpoints, payload fields, idempotency headers, or a USPS Priority service id. A shipping method on the order has an integer `id` and a `name`; use an id verified from the live account, not a guessed constant. If semantics or preservation cannot be established, stop the API mutation and flag it. That upsert does not clear `actions_required.at_risk` and does not set `processing_status`. The only verified clear for a returned at-risk order is the app call in [Resolve at risk as undeliverable](#resolve-at-risk-as-undeliverable). `SHIPMONK_API_KEY` cannot make that call.
+
+### Resolve at risk as undeliverable
+
+The ShipMonk app button **Resolve At Risk** is an app-session call, not an integrations upsert. The dialog options and their `resolveAs` values are `enRoute`, `shippedUntrackable`, `delivered`, and `undeliverable`. The dialog opens on `enRoute`. For an order whose return `status` is exactly `returned`, this skill uses `undeliverable` only. Do not send `enRoute`, `delivered`, or `shippedUntrackable` for that order. Do not change the shipping service. Do not send customer email. A sent customer email still does not clear the alert by itself.
+
+Call when a person asks to resolve that one returned order, or uses the exact label `resolve as undeliverable` for one order. A message that asks to learn this call or to update the skill does not POST, even when it names the order and the resolution. The next request to resolve that order is the call.
+
+`POST https://app.shipmonk.com/api/v1/orders/{shipmonkOrderId}/resolve-at-risk`
+
+JSON body: `{"resolveAs":"undeliverable"}`. Method and body are what the app bundle sends (`app.shipmonk.com/build/app.js`). `{shipmonkOrderId}` is the numeric id in `/orders/order/{id}/information`. The integrations order payload does not include that id. Do not guess it. If the id is not verified, stop before the POST.
+
+Auth is `Authorization: Bearer` with the logged-in app JWT, plus `Content-Type: application/json`. The app also sends `X-Frontend-Version`. On 2026-11-02 the integrations key on that URL returned HTTP 401 `The provided API key cannot be used for this operation.` The same key as a Bearer token returned HTTP 401 `Invalid JWT Token`. Do not substitute `SHIPMONK_API_KEY`. Do not invent a JWT. Do not call `POST /api/v1/orders/batch/resolve-at-risk`.
+
+If the return status is not exactly `returned`, do not pick a `resolveAs`. Ask which of the four values they want, and do not call. Zero orders or more than one: ask which order and do not call. The daily report does not call this. Saving this skill does not call this.
+
+Re-read the order and the return immediately before the POST. After it, read the order back with the integrations API. Success is `actions_required.at_risk` false and `processing_status` `undeliverable`. The app toast is not readback. If the JWT is missing, or the readback does not match, say the alert was not cleared. Do not clear the alert any other way.
 
 ### How to write each reply
 
@@ -245,7 +263,7 @@ Store 19002 · Fulfilled
 
 Read back **every** mutation, including service edits, clone/save/submit, draft creation/update, Slack posts/updates, and incident record writes. Record original state, requested action, observed result and next step. If a call times out, inspect persistent state before retrying; if the outcome remains uncertain, mark it uncertain and stop that action. Preserve completed independent work.
 
-Do not automatically dismiss alerts. The separately approved cleanup of 26 alerts older than September 27 was a one-time action, not a standing policy. Age, a saved draft, a Slack post, or submission alone is not grounds to clear risk. Any requested dismissal requires its own authorized scope and verified resolution.
+Do not automatically dismiss alerts. The separately approved cleanup of 26 alerts older than September 27 was a one-time action, not a standing policy. Age, a saved draft, a Slack post, a sent customer email, or submission alone is not grounds to clear risk. The one standing clear is a person-requested [resolve as undeliverable](#resolve-at-risk-as-undeliverable) for a single returned order, and only after the app call is read back. Any other requested dismissal still needs its own authorized scope and verified resolution.
 
 Finish with the order/replacement links, precise status, routing result, unsent draft location, Slack reference, unresolved risks and approval/next step. Do not claim a blocked, queued, or uncertain action succeeded.
 

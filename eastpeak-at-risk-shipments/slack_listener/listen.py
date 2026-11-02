@@ -23,6 +23,7 @@ ALLOWED_STORES = {"19002", "18969"}
 ACTION_LABELS = (
     ("Draft an email to the customer", "draft_address_check"),
     ("Draft address-check email", "draft_address_check"),
+    ("resolve as undeliverable", "resolve_as_undeliverable"),
     ("guarded clone and submit", "guarded_clone_and_submit"),
     ("unsent Gmail draft", "unsent_gmail_draft"),
     ("USPS Priority", "usps_priority"),
