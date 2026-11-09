@@ -70,6 +70,15 @@ If everything looks right, reply to confirm and we'll ship another out. Once you
 
 Do not write `so we can work out the next steps.`
 
+Sign every customer draft, whether the order was returned or the carrier reported an address problem:
+
+```
+Best,
+George
+```
+
+Do not sign `East Peak`. Do not sign `Thanks for your help!` and then the company name. The subject and the order line may still say East Peak. The signature is George. The From account stays `hello@runeastpeak.com`. A mailbox display name of East Peak is not the signature.
+
 ## Return stage
 
 Do not treat `processing_status` as the shipment stage when the order lists any `returns[].rma`. For each RMA, read `GET /v1/integrations/returns-list?rma={rma}`. Exact status `returned` means the shipment was returned, even when `processing_status` is still `en_route`. That order gets the draft-email button and does not get USPS Priority. Before a draft exists, the context line is `Draft an email to the customer.` After the draft is saved and read back, the line is `The draft email is in your inbox.` and the button is omitted. Do not match the substring "return" in a city, note, or tracking line. Other return statuses are not this gate.
@@ -218,9 +227,8 @@ Could you confirm that the shipping address below is correct?
 
 If everything looks right, reply to confirm and we'll ship another out. Once you send the correct address, we'll ship another out.
 
-Thanks for your help!
-
-East Peak
+Best,
+George
 ```
 
 Use the first name from the verified recipient. If it cannot be split safely, open with "Hi there,". `{returned_date}` is the return's `received_at` in `America/Los_Angeles`, written as Month D, YYYY, such as October 21, 2026. If that date is missing, omit " on {returned_date}" and write `was returned to us` with no `on` clause. The address lines are the order's current ship-to, copied exactly. Omit street2 when it is empty. Do not claim the address failed validation, and do not invent a carrier reason. Leave `reason_unknown` and any other unverified return reason out of the draft.
@@ -234,6 +242,6 @@ No language guide named Thor is in this repo or in hello@runeastpeak.com. Write 
 - First name, contractions, and short sentences.
 - Name the order and the return date when that date is known. Acknowledge the hassle. Do not say the package has not shipped again.
 - Ask them to confirm, and say we'll ship another out. If they send a correction, say we'll ship another out once we have it. Do not write `so we can work out the next steps.`
-- Sign `Thanks for your help!` then `East Peak`. Do not sign as a teammate.
+- Sign `Best,` then `George`. Do not sign `East Peak`.
 
 A saved draft is waiting for a person to review it. It does not reship the order and it does not clear the alert.
