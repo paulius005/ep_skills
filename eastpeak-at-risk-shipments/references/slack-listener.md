@@ -37,11 +37,19 @@ Do not pick a shipment when the message names zero orders or more than one. Ask 
 
 Post the reply with `slack_poster.post_thread_reply` and blocks from `conversation_blocks`. Do not post a paragraph. Do not use Cursor's Send to Slack tool. A request to see a saved draft does not use this shape. Use `draft_quote_blocks` for that reply, described below.
 
-1. Lead: one sentence, rendered bold. It answers the ask.
-2. Bullets: the few facts they need, one per line. Do not put an email body, a street address, or any other copied passage into these bullets.
+1. Lead: one sentence, rendered bold. It answers the ask in ordinary coworker English.
+2. Bullets: the few facts they need, one per line. Do not repeat the lead. Do not put an email body, a street address, or any other copied passage into these bullets.
 3. Note: one context line, 75 characters or fewer, for the limit or the next step.
 
-A request to adjust yourself uses that same shape. The lead says the skill was updated. The bullets say what changed. The note names a limit that stayed, or says the shipment was not changed.
+### Voice
+
+Write that reply the way a teammate would. Contractions and "I" and "you" are normal. Do not use Caterpillar English, Simplified Technical English, or any other controlled language. The 2026-10-31 instruction that human instructions use Caterpillar English is retired. On 2026-11-09 the ask was to talk like a person.
+
+Say a limit once, in plain words. "An address-check draft is only saved when the return status is exactly returned" is the retired voice. The same fact is "I held that draft because the order hasn't come back to us."
+
+Order-card lines, button labels, and the returned-order email template stay as written. This voice is for conversation replies. Still never say a draft was sent, and still never send it. If a memory still says to use Caterpillar English, follow this section and [Reply voice](../SKILL.md#reply-voice).
+
+A request to adjust yourself uses that same shape. The lead says the skill was updated. The bullets say what changed. The note names a limit that stayed, or says the shipment was not changed. Write it in this voice.
 
 ## Return stage
 
@@ -75,7 +83,7 @@ A question about how long an order has been stuck is a conversation. Answer it f
 
 A reply in this channel that asks to change the skill is skill feedback. It is not one of the fixed shipment labels above. Do not update the ShipMonk shipment from the feedback alone, and do not auto-merge orders or shipments because of it. If the same message also asks for one named order's fixed draft or shipment action, do that fixed action too.
 
-Update `SKILL.md` and the references so the feedback is part of the skill, then add those files to the repo and commit. Reply in the thread with `conversation_blocks`: a bold lead, bullets for what changed, and a context note. Leave the pull request unmerged unless the user asks to merge. Never commit or print the API key. If the feedback would send customer email, use FlavorCloud, skip the halted-reason gates, or charge the customer again, record the reply, say which limit stayed, and leave that part unchanged. A request to answer ordinary questions, or to adjust yourself, is not one of those limits. That reply is still sent when the message names no order. If the same message also asks for one named order's fixed draft or shipment action, do that fixed action too.
+Update `SKILL.md` and the references so the feedback is part of the skill, then add those files to the repo and commit. Reply in the thread with `conversation_blocks`: a bold lead, bullets for what changed, and a context note, in the coworker voice above. Leave the pull request unmerged unless the user asks to merge. Never commit or print the API key. If the feedback would send customer email, use FlavorCloud, skip the halted-reason gates, or charge the customer again, record the reply, say which limit stayed, and leave that part unchanged. A request to answer ordinary questions, or to adjust yourself, is not one of those limits. That reply is still sent when the message names no order. If the same message also asks for one named order's fixed draft or shipment action, do that fixed action too.
 
 The fixed reply list and the flexible human reply live in [Reply baseline](../SKILL.md#reply-baseline). If an automation prompt still names an old returned-order subject `Can you double-check the address for order {order_number}?` or `shipping issue with order: #{order_number}`, or treats an unmatched @mention as silence, follow the skill. The prompt should be changed to the current subject `Address Confirmation for Your East Peak Order #{order_number}` and to a reply on every human @mention.
 
