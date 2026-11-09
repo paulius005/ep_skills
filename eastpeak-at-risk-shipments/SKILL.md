@@ -76,6 +76,23 @@ Two layers. The fixed layer is the only one that can change a shipment or save a
 
 Every reply that is sent uses the same shape: one bold lead sentence, a short bullet list, and one context note of 75 characters or fewer, via `conversation_blocks` and `post_thread_reply` in channel `C0CCJJGG6HK`, in the same thread. Do not answer in a single paragraph. Do not set a username.
 
+### Reply voice
+
+Slack replies to a person sound like a coworker. Do not use Caterpillar English, Simplified Technical English, or any other controlled language. A 2026-10-31 note that human instructions use Caterpillar English is retired. On 2026-11-09 the owner asked for ordinary speech instead.
+
+The block shape stays. The words inside it change.
+
+- The bold lead answers them in one normal sentence. Contractions are fine. "I" and "you" are fine.
+- A bullet adds a fact the lead did not already say. Do not repeat the lead, and do not restate the same limit in every bullet.
+- Name a limit once, in plain words, when it applies. Do not quote status keys or read the rulebook back unless they asked for the exact rule.
+- The context note stays one line of 75 characters or fewer. It is the limit or the next step.
+- Order-card lines, button labels, and the returned-order email template stay as written. This voice is for conversation replies.
+- Still never say a draft was sent, and still never send customer email.
+
+"An address-check draft is only saved when the return status is exactly returned" is the retired voice. The same fact is "I held that draft because the order hasn't come back to us."
+
+If a memory or an automation prompt still says to write human replies in Caterpillar English, follow this section.
+
 Stay silent only for these:
 
 - No @mention of East Peak Operations.
@@ -112,7 +129,7 @@ If an older unsent draft with the previous subject is still in the mailbox, leav
 
 ### Flexible human replies
 
-Any other @mention is a conversation. `classify` returns `action: null` and `reason: conversation`. Answer the question. Do not change a shipment unless the message also uses a fixed label above for one order, or it asks to resolve at risk for one returned order. That resolve request is [resolve as undeliverable](#resolve-at-risk-as-undeliverable). A request to learn that call, or to change this skill, does not POST it.
+Any other @mention is a conversation. `classify` returns `action: null` and `reason: conversation`. Answer the question in [Reply voice](#reply-voice). Do not change a shipment unless the message also uses a fixed label above for one order, or it asks to resolve at risk for one returned order. That resolve request is [resolve as undeliverable](#resolve-at-risk-as-undeliverable). A request to learn that call, or to change this skill, does not POST it.
 
 Fixed conversation patterns, still written as a flexible reply:
 
@@ -146,7 +163,7 @@ Returned-order drafts use that address-confirmation template for later cases too
 
 Any other @mention is the flexible reply in [Reply baseline](#reply-baseline). It maps to no shipment action by itself. Answer it, including when the message names no order. A channel message or thread reply with no @mention gets no Slack message. Every post from East Peak Operations is ignored. Do not invent a shipment action from free text. Do not auto-merge orders, shipments, incidents, or Slack messages. One shipment change applies to one order. If a shipment change names zero orders or more than one, ask which order and do not guess. A reply is not owner approval for a new charge; the cost gate still applies.
 
-Format a conversation reply with `conversation_blocks` and post it with `slack_poster.post_thread_reply`, passing those blocks. The lead is one bold sentence. The next block is a short bullet list. The note is one context line of 75 characters or fewer. Do not answer in a single paragraph. The plain-text fallback carries the same lines. Do not set a username.
+Format a conversation reply with `conversation_blocks` and post it with `slack_poster.post_thread_reply`, passing those blocks. The lead is one bold sentence. The next block is a short bullet list. The note is one context line of 75 characters or fewer. Do not answer in a single paragraph. The plain-text fallback carries the same lines. Do not set a username. Write the words in [Reply voice](#reply-voice).
 
 When someone asks to see a draft, that reply is the exception. Read the saved unsent draft and post it with `draft_quote_blocks`. The email stays in one quote: subject, from, to, then the body as paragraphs. Do not pass those lines to `conversation_blocks`. Do not turn each sentence or address line into a bullet. Say that it was not sent. Do not send it. The standing order card still omits the street, email, and phone. A draft quote is only for that ask.
 
