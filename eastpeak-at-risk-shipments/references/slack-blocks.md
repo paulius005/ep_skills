@@ -86,6 +86,8 @@ In transit, with no built-in action, the card has no `actions` block. `View orde
 
 Order `#8274` uses the same hierarchy with `In transit → California`, `ShipMonk Standard`, and the same context and footer.
 
+When that in-transit order has an unsent draft, set `draft_saved`. The context line changes to `The email is ready. Service unchanged — shipment already en route.` The service line stays. The parent summary adds `The customer email is ready.` when one order has a draft, and `{n} customer emails are ready.` when more than one does. The email was not sent. A returned order with a saved draft uses `The email is ready.` and does not use the service-unchanged sentence. See [When the email is ready](../SKILL.md#when-the-email-is-ready).
+
 `Service` is `Not set (requested Standard)` when ShipMonk has not resolved a method. The route uses `In transit` for `en_route` and the full state name.
 
 ## Address section
@@ -122,7 +124,7 @@ Every daily at-risk card checks order number `{order}-R1` on the same store befo
 | Draft an email to the customer | Return status exactly `returned`, and no saved draft yet | `action_id` `draft_address_check`. Saves an unsent draft from `hello@runeastpeak.com`. Does not send. |
 | USPS Priority | Verified editable Hawaii or Alaska, and not returned, and not en route or packed | `action_id` `usps_priority`. Does not use FlavorCloud. |
 
-Returned wins over USPS Priority. Do not include both. Do not add a button that edits the address. After the draft is saved and read back, omit the draft button and set the context line to `The draft email is in your inbox.` Before that, the context line is `Draft an email to the customer.` When a replacement was queued and the original could not be resolved, set `cloned` and use the context line `Order has been cloned. Please Resolve At Risk`. The daily readout, after the `{order}-R1` check finds that order, is `Order has been cloned.`
+Returned wins over USPS Priority. Do not include both. Do not add a button that edits the address. After the draft is saved and read back, omit the draft button and set the context line to `The email is ready.` Before that, the context line is `Draft an email to the customer.` The daily report saves that returned draft without waiting for the button. An in-transit order that is not returned, with the service left unchanged and a draft read back, uses `The email is ready. Service unchanged — shipment already en route.` When a replacement was queued and the original could not be resolved, set `cloned` and use the context line `Order has been cloned. Please Resolve At Risk`. The daily readout, after the `{order}-R1` check finds that order, is `Order has been cloned.`
 
 Put the button in `actions.elements` only when its gate passes. Slack allows five. `value` is a JSON string under 2000 characters. `action_id` is unique inside the actions block.
 
