@@ -12,6 +12,10 @@ from slack_poster.blocks import (  # noqa: E402
     ADDRESS_LINE_LIMIT,
     CLONED_RESOLVE_ACTION,
     DAILY_CLONED_READOUT,
+    EMAIL_READY,
+    EMAIL_READY_EN_ROUTE,
+    EN_ROUTE_UNCHANGED,
+    Report,
     Shipment,
     apply_daily_clone_check,
     existing_clone_number,
@@ -28,6 +32,7 @@ from slack_poster.blocks import (  # noqa: E402
     report_from_dict,
     show_draft_button,
     show_usps_button,
+    summary_lines,
     truncate_address_line2,
     truncate_display,
 )
@@ -183,9 +188,45 @@ class LayoutTests(unittest.TestCase):
         self.assertEqual(order_blocks(order)[1]["elements"][0]["text"], "Order has been cloned.")
         untouched = shipment()
         self.assertFalse(apply_daily_clone_check(untouched, ["8257"]))
-        self.assertEqual(context_line(untouched), "Service unchanged — shipment already en route.")
+        self.assertEqual(context_line(untouched), EN_ROUTE_UNCHANGED)
         returned = shipment(return_status="returned", daily_cloned=True)
         self.assertEqual(context_line(returned), "Draft an email to the customer.")
+
+    def test_a_saved_draft_says_the_email_is_ready(self):
+        self.assertEqual(
+            EMAIL_READY_EN_ROUTE,
+            "The email is ready. Service unchanged — shipment already en route.",
+        )
+        self.assertLessEqual(len(EMAIL_READY_EN_ROUTE), 75)
+        self.assertEqual(EMAIL_READY, "The email is ready.")
+        en_route = shipment(draft_saved=True, state="UT", service="ShipMonk Economy")
+        self.assertEqual(context_line(en_route), EMAIL_READY_EN_ROUTE)
+        self.assertEqual(order_blocks(en_route)[1]["elements"][0]["text"], EMAIL_READY_EN_ROUTE)
+        self.assertNotIn("actions", [block["type"] for block in order_blocks(en_route)])
+        returned = shipment(return_status="returned", rma="712-884-506", draft_saved=True)
+        self.assertEqual(context_line(returned), EMAIL_READY)
+        one = Report(pacific_date=date(2026, 11, 10), shipments=[en_route])
+        self.assertEqual(
+            summary_lines(one),
+            [
+                "The order shown is already in transit.",
+                "Shipping services were left unchanged.",
+                "The customer email is ready.",
+            ],
+        )
+        two = Report(
+            pacific_date=date(2026, 11, 10),
+            shipments=[en_route, shipment(order_number="8400", draft_saved=True)],
+        )
+        self.assertIn("2 customer emails are ready.", summary_lines(two))
+        unchanged = summary_lines(load("in_transit.json"))
+        self.assertEqual(
+            unchanged,
+            [
+                "Both orders shown are already in transit.",
+                "Shipping services were left unchanged.",
+            ],
+        )
 
     def test_context_elements_stay_within_slack_limit(self):
         for name in ("in_transit.json", "address_and_returned.json"):
@@ -357,7 +398,7 @@ class ButtonVisibilityTests(unittest.TestCase):
         self.assertEqual(buttons, [])
         self.assertEqual(
             context_line(shipment(return_status="returned", rma="712-884-506", draft_saved=True)),
-            "The draft email is in your inbox.",
+            "The email is ready.",
         )
 
     def test_en_route_packed_and_other_states_hide_usps(self):

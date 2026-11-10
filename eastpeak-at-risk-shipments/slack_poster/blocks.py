@@ -20,6 +20,11 @@ ADDRESS_DISPLAY_MAX = 300
 CONTEXT_MAX = 75
 CLONED_RESOLVE_ACTION = "Order has been cloned. Please Resolve At Risk"
 DAILY_CLONED_READOUT = "Order has been cloned."
+EN_ROUTE_UNCHANGED = "Service unchanged — shipment already en route."
+EMAIL_READY = "The email is ready."
+EMAIL_READY_EN_ROUTE = (
+    "The email is ready. Service unchanged — shipment already en route."
+)
 SECTION_MAX = 3000
 BUTTON_VALUE_MAX = 2000
 PACIFIC = ZoneInfo("America/Los_Angeles")
@@ -330,7 +335,13 @@ def summary_lines(report: Report) -> list[str]:
         service_line = "1 shipping service was changed."
     else:
         service_line = f"{changes} shipping services were changed."
-    return [transit_line, service_line]
+    lines = [transit_line, service_line]
+    ready = sum(1 for shipment in report.shipments if shipment.draft_saved)
+    if ready == 1:
+        lines.append("The customer email is ready.")
+    elif ready > 1:
+        lines.append(f"{ready} customer emails are ready.")
+    return lines
 
 
 def quote_lines(report: Report) -> tuple[str, str]:
@@ -408,6 +419,10 @@ def apply_daily_clone_check(shipment: Shipment, known_order_numbers) -> bool:
     return shipment.daily_cloned
 
 
+def _service_left_because_en_route(shipment: Shipment) -> bool:
+    return shipment.processing_status == "en_route" and not shipment.service_changed
+
+
 def context_line(shipment: Shipment) -> str:
     if shipment.daily_cloned and shipment.return_status != "returned":
         line = DAILY_CLONED_READOUT
@@ -417,14 +432,20 @@ def context_line(shipment: Shipment) -> str:
         line = shipment.context
     elif shipment.cloned:
         line = "Order has been cloned. Please Resolve At Risk"
+    elif (
+        shipment.draft_saved
+        and shipment.return_status != "returned"
+        and _service_left_because_en_route(shipment)
+    ):
+        line = EMAIL_READY_EN_ROUTE
     elif shipment.draft_saved:
-        line = "The draft email is in your inbox."
+        line = EMAIL_READY
     elif shipment.return_status == "returned":
         line = "Draft an email to the customer."
     elif address_over_limit(shipment):
         line = "Address 2 exceeded limit of 50 characters."
-    elif shipment.processing_status == "en_route" and not shipment.service_changed:
-        line = "Service unchanged — shipment already en route."
+    elif _service_left_because_en_route(shipment):
+        line = EN_ROUTE_UNCHANGED
     elif show_usps_button(shipment):
         place = state_name(shipment.state)
         line = f"Choose USPS Priority for {place}."
