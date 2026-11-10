@@ -281,6 +281,15 @@ class ListenerTests(unittest.TestCase):
         self.assertIn("Best,\nGeorge", reference)
         self.assertNotIn("Sign `Thanks for your help!` then `East Peak`.", reference)
 
+    def test_a_slack_skill_update_is_merged_without_a_second_ask(self):
+        root = Path(__file__).resolve().parents[1]
+        skill = (root / "SKILL.md").read_text(encoding="utf-8")
+        reference = (root / "references" / "slack-listener.md").read_text(encoding="utf-8")
+        self.assertIn("A Slack request to update this skill is the merge.", skill)
+        self.assertIn("A Slack request to update this skill is the merge.", reference)
+        self.assertNotIn("Do not merge unless they ask.", skill)
+        self.assertNotIn("Leave the pull request unmerged unless the user asks to merge.", reference)
+
     def test_reply_posts_as_the_same_app_and_does_not_print_the_token(self):
         token = "xoxb-listener-test-value"
         calls = []
