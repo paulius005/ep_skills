@@ -157,7 +157,7 @@ Any other @mention is a conversation. `classify` returns `action: null` and `rea
 Fixed conversation patterns, still written as a flexible reply:
 
 - They ask to see a draft: quote the saved unsent subject and body, say it was not sent, and use the context note `The draft email is in your inbox.` The order card still omits the street, email, and phone. The quote is only for that ask.
-- They ask to change this skill or how replies work: update this skill and its references, commit, and say what changed. Do not merge unless they ask. If that same message also asks for one named order's fixed draft or shipment action, do that too. The skill edit alone does not change a shipment.
+- They ask to change this skill or how replies work: update this skill and its references, commit, push, and merge that pull request. A Slack request to update this skill is the merge. Do not wait for a second message that says merge. If that same message also asks for one named order's fixed draft or shipment action, do that too. The skill edit alone does not change a shipment.
 - They ask for a customer email: do not refuse. Check the live shipment, then save the unsent draft or ask why, in [When a person asks for a draft](references/slack-listener.md#when-a-person-asks-for-a-draft). Do not hold it because the carrier still has the package.
 - A shipment change names zero orders or more than one: ask which order. Change nothing.
 
@@ -191,7 +191,7 @@ Format a conversation reply with `conversation_blocks` and post it with `slack_p
 
 When someone asks to see a draft, that reply is the exception. Read the saved unsent draft and post it with `draft_quote_blocks`. The email stays in one quote: subject, from, to, then the body as paragraphs. Do not pass those lines to `conversation_blocks`. Do not turn each sentence or address line into a bullet. Say that it was not sent. Do not send it. The standing order card still omits the street, email, and phone. A draft quote is only for that ask.
 
-A reply that asks to change this skill, or asks you to adjust yourself, updates this skill and its references, then is committed. Reply in the thread with what changed and which limit stayed. Do not merge unless they ask. Never commit or print `SHIPMONK_API_KEY` or `SLACK_BOT_TOKEN`. Do not apply feedback that would send customer email, use FlavorCloud, skip the halted-reason gates, or charge the customer again. Say which limit stayed and leave that part unchanged. If the same message also names one order and a fixed shipment reply, do that fixed reply as well. The skill edit does not itself change the shipment. A skill-feedback message that names no order still gets that reply.
+A reply in Slack that asks to change this skill, or asks you to adjust yourself, updates this skill and its references, then is committed, pushed, and merged. Merge that pull request without waiting for another message. Reply in the thread with what changed and which limit stayed. Never commit or print `SHIPMONK_API_KEY` or `SLACK_BOT_TOKEN`. Do not apply feedback that would send customer email, use FlavorCloud, skip the halted-reason gates, or charge the customer again. Say which limit stayed and leave that part unchanged. Do not merge a change that does one of those. If the same message also names one order and a fixed shipment reply, do that fixed reply as well. The skill edit does not itself change the shipment. A skill-feedback message that names no order still gets that reply. Do not auto-merge orders or shipments.
 
 ## ShipMonk API
 
