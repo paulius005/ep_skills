@@ -254,6 +254,33 @@ class ListenerTests(unittest.TestCase):
         self.assertIsNone(blank["action"])
         self.assertEqual(blank["reason"], "not_an_action")
 
+    def test_a_skill_change_about_drafts_is_a_conversation(self):
+        ask = human_reply(
+            f"<@{BOT_USER}> Please adjust your skill so you don't refuse a reply. "
+            "Check the shipment and ask if you are not sure why a draft is needed."
+        )
+        decision = classify(ask, bot_user_id=BOT_USER)
+        self.assertEqual(decision["action"], "conversation")
+        self.assertEqual(decision["reason"], "conversation")
+        result = listen(ask, bot_user_id=BOT_USER, post=False)
+        self.assertFalse(result["posted"])
+
+    def test_a_signature_change_is_a_conversation_and_the_template_signs_george(self):
+        ask = human_reply(
+            f"<@{BOT_USER}> Are all of your skill updates merged? "
+            "Also adjust yourself so you sign the emails,\n\nBest,\nGeorge\n\nNot East Peak"
+        )
+        decision = classify(ask, bot_user_id=BOT_USER)
+        self.assertEqual(decision["action"], "conversation")
+        self.assertEqual(decision["reason"], "conversation")
+        result = listen(ask, bot_user_id=BOT_USER, post=False)
+        self.assertFalse(result["posted"])
+        reference = (
+            Path(__file__).resolve().parents[1] / "references" / "slack-listener.md"
+        ).read_text(encoding="utf-8")
+        self.assertIn("Best,\nGeorge", reference)
+        self.assertNotIn("Sign `Thanks for your help!` then `East Peak`.", reference)
+
     def test_reply_posts_as_the_same_app_and_does_not_print_the_token(self):
         token = "xoxb-listener-test-value"
         calls = []

@@ -45,11 +45,39 @@ Post the reply with `slack_poster.post_thread_reply` and blocks from `conversati
 
 Write that reply the way a teammate would. Contractions and "I" and "you" are normal. Do not use Caterpillar English, Simplified Technical English, or any other controlled language. The 2026-10-31 instruction that human instructions use Caterpillar English is retired. On 2026-11-09 the ask was to talk like a person.
 
-Say a limit once, in plain words. "An address-check draft is only saved when the return status is exactly returned" is the retired voice. The same fact is "I held that draft because the order hasn't come back to us."
+Say a limit once, in plain words. "An address-check draft is only saved when the return status is exactly returned" is retired wording. Do not use it to turn down an email. The card button is still only for a returned order. When a person asks for an email, check the shipment and ask a follow-up if the reason is not clear.
 
-Button labels and the returned-order email template stay as written. The order-card line for a saved draft is in [When the email is ready](../SKILL.md#when-the-email-is-ready). This voice is for conversation replies. Still never say a draft was sent, and still never send it. If a memory still says to use Caterpillar English, follow this section and [Reply voice](../SKILL.md#reply-voice).
+Button labels stay as written. The order-card line for a saved draft is in [When the email is ready](../SKILL.md#when-the-email-is-ready). Change the customer email only when they ask to change that email. This voice is for conversation replies. Still never say a draft was sent, and still never send it. If a memory still says to use Caterpillar English, follow this section and [Reply voice](../SKILL.md#reply-voice).
 
 A request to adjust yourself uses that same shape. The lead says the skill was updated. The bullets say what changed. The note names a limit that stayed, or says the shipment was not changed. Write it in this voice.
+
+## When a person asks for a draft
+
+On 2026-11-09 the owner said not to refuse when someone asks for a customer email. Do not answer that the carrier still has the package, so no draft was saved.
+
+1. Read the live shipment before you decide. That is the ShipMonk order, any return, the service, and the carrier's latest event when tracking is on the order or they shared a tracking page.
+2. If that status makes the reason clear, save or update one unsent draft from `hello@runeastpeak.com`. A return status of exactly `returned` uses the returned-order template below. A carrier invalid-address or undeliverable scan is also a clear reason, even when the carrier still has the package and the order has no return. Say what the carrier reported. Do not say the order was returned.
+3. If the status does not make the reason clear, ask what the email should cover. Do not guess a reason. Do not refuse the reply.
+4. The card button is still only for a returned order. A person's ask uses this check instead of that refusal.
+5. Still never send. Keep one unsent draft and update it in place. If both a ship-to email and a customer email exist and they differ, or neither exists, ask which address to use. Do not guess. If the ship-to email is empty, use the customer email.
+6. The closing line does not reship the order, change the service, clone a replacement, charge the customer again, or clear the alert. Do not do those things because the draft says we will ship another out.
+
+Closing line, for a returned order and for a carrier address problem:
+
+```
+If everything looks right, reply to confirm and we'll ship another out. Once you send the correct address, we'll ship another out.
+```
+
+Do not write `so we can work out the next steps.`
+
+Sign every customer draft, whether the order was returned or the carrier reported an address problem:
+
+```
+Best,
+George
+```
+
+Do not sign `East Peak`. Do not sign `Thanks for your help!` and then the company name. The subject and the order line may still say East Peak. The signature is George. The From account stays `hello@runeastpeak.com`. A mailbox display name of East Peak is not the signature.
 
 ## Return stage
 
@@ -64,7 +92,7 @@ Match the button `action_id`, the exact action label, or plain language that cle
 | `action_id` `usps_priority`, or label `USPS Priority` | Hawaii/Alaska USPS Priority selection | Verified HI/AK only, and the return status is not `returned`. If the exact live reason is `halted awaiting carrier processing`, the reply does not submit by itself: set USPS Priority on the eligible replacement, and clone and submit only after the duplicate, original, and cost gates. If the reason is anything else and the shipment is still editable, set USPS Priority, verify it, then save an unsent Gmail draft and never send it. If the shipment is not editable, or Priority cannot be verified, flag it, leave the service unchanged, and do not substitute another carrier. |
 | Label `guarded clone and submit` | Replacement branch | Only when the exact live reason is `halted awaiting carrier processing`. Clone and submit only after the duplicate, original, and cost gates. For verified HI/AK, set USPS Priority on the eligible replacement before submission. Do not create a customer draft when that replacement succeeds unless separately requested. |
 | Label `unsent Gmail draft` | Draft branch | Every reason other than that exact halted reason. For verified HI/AK, when the shipment is still editable and not returned, select and verify USPS Priority first, then save the draft. **DRAFT ONLY — NEVER SEND.** |
-| `action_id` `draft_address_check`, or label `Draft an email to the customer`, or label `Draft address-check email` | Returned-shipment customer email | Only when the return status is exactly `returned`. Re-read the return before drafting. Save the unsent draft below from `hello@runeastpeak.com`. Do not send it. Do not change the shipping service. Then set the order-card context line to `The email is ready.` The conversation note stays `The draft email is in your inbox.` |
+| `action_id` `draft_address_check`, or label `Draft an email to the customer`, or label `Draft address-check email` | Returned-shipment customer email | The button runs only when the return status is exactly `returned`. Re-read the return before that draft. If a person asks for a customer email and the order is not returned, do not refuse. Follow [When a person asks for a draft](#when-a-person-asks-for-a-draft). Save the unsent draft from `hello@runeastpeak.com`. Do not send it. Do not change the shipping service. Then set the order-card context line to `The email is ready.` The conversation note stays `The draft email is in your inbox.` |
 | Label `resolve as undeliverable` | Returned-order at-risk clear | Only when the return status is exactly `returned`, and only for that one order. POST `https://app.shipmonk.com/api/v1/orders/{shipmonkOrderId}/resolve-at-risk` with `{"resolveAs":"undeliverable"}` and the app JWT. Do not use the dialog default `enRoute`. Do not change the shipping service and do not send email. The integrations API key cannot make this call. If the JWT or the numeric order id is missing, stop and say the alert was not cleared. Read the call back before claiming it. Details are in [Resolve at risk as undeliverable](../SKILL.md#resolve-at-risk-as-undeliverable). |
 
 `USPS Priority` is the only Hawaii/Alaska service option this skill defines. Show it as a button only when the verified destination state is HI or AK (or the unambiguous full name), the shipment is still editable, the processing status is not `en_route` or `packed`, and the return status is not `returned`. Handed-off, returned, or otherwise uneditable HI/AK shipments are flagged in the order message and get no USPS Priority button. Do not add a FlavorCloud button or any other service button. Do not invent a button for clone, cancel, refund, or merge. The customer-email button is the one draft button, and only for return status `returned`. Its label is `Draft an email to the customer.` Its `action_id` stays `draft_address_check`. Do not add a button that edits the address. The address-line section is a report. It is not an action label, and it does not change `ship_to`.
@@ -165,7 +193,7 @@ On `draft_address_check` only:
 1. Re-read the return. If the status is no longer exactly `returned`, stop and say so. Do not draft from a stale button.
 2. Re-read the order. The recipient is `customer_email` when the ship-to email is empty. If both are present and differ, or neither is present, stop and ask which address to use. Never guess.
 3. The From account must be `hello@runeastpeak.com`. If that mailbox is not the one available, stop. Do not draft from another account.
-4. Search `hello@runeastpeak.com` for an existing unsent draft for this order. That includes the subject below, the in-transit subject `Can you confirm the address for your East Peak order #{order_number}?`, any earlier returned-order draft for the same order, and the older subjects `shipping issue with order: #{order_number}` and `Can you double-check the address for order {order_number}?`. Update the newest unsent draft in place, including the subject. Do not open another draft while one is still unsent, and do not save a second copy. If a matching message was already sent, stop and report it. Do not send another and do not start a second draft cycle. Use the subject and body below. Capitalize the subject. Keep the note warm, natural, and short. Say the order was returned and acknowledge the hassle. Do not write `We have not shipped it again.` Include the ship-to address and one next step: confirm it or send a correction. Use only verified facts. Do not guess a return reason or promise a ship date. Include `{returned_date}` only when the return record has that date.
+4. Search `hello@runeastpeak.com` for an existing unsent draft for this order. That includes the subject below, the in-transit subject `Can you confirm the address for your East Peak order #{order_number}?`, any earlier returned-order draft for the same order, and the older subjects `shipping issue with order: #{order_number}` and `Can you double-check the address for order {order_number}?`. Update the newest unsent draft in place, including the subject. Do not open another draft while one is still unsent, and do not save a second copy. If a matching message was already sent, stop and report it. Do not send another and do not start a second draft cycle. Use the subject and body below. Capitalize the subject. Keep the note warm, natural, and short. Say the order was returned and acknowledge the hassle. Do not write `We have not shipped it again.` Include the ship-to address and the closing line: if it looks right, they reply to confirm and we'll ship another out; once they send the correct address, we'll ship another out. Do not write `so we can work out the next steps.` Use only verified facts. Do not guess a return reason or promise a ship date. Include `{returned_date}` only when the return record has that date.
 5. Save **DRAFT ONLY — NEVER SEND**. Read back the draft id, From, To, subject, body, and unsent state.
 6. Reply on that order message. The order card says `The email is ready.` The conversation note is `The draft email is in your inbox.` Include the draft link when one exists. Do not include the address, email, or phone on that order card. Do not say the draft was sent. When a person asks to see the draft, post it with `draft_quote_blocks` and say it was not sent.
 
@@ -177,7 +205,7 @@ Guidelines for every returned-to-sender draft. Adapt the template to the order. 
 - Keep the tone warm, natural, and concise.
 - Briefly explain that the order was returned and acknowledge the inconvenience.
 - Avoid abrupt wording such as "We have not shipped it again." and "We haven't reshipped it."
-- Include the shipping address and one clear next step: confirm it or provide a correction.
+- Include the shipping address and the closing line: if it looks right, they reply to confirm and we'll ship another out; once they send the correct address, we'll ship another out. Do not write `so we can work out the next steps.`
 - Use only verified facts. Do not speculate about the return reason or promise a shipping date.
 
 Subject, only for a returned order:
@@ -199,16 +227,15 @@ Could you confirm that the shipping address below is correct?
 {street2 line only when present}
 {city}, {state} {zip}
 
-If everything looks right, just reply to confirm. If anything needs updating, send us the correct address so we can work out the next steps.
+If everything looks right, reply to confirm and we'll ship another out. Once you send the correct address, we'll ship another out.
 
-Thanks for your help!
-
-East Peak
+Best,
+George
 ```
 
 Use the first name from the verified recipient. If it cannot be split safely, open with "Hi there,". `{returned_date}` is the return's `received_at` in `America/Los_Angeles`, written as Month D, YYYY, such as October 21, 2026. If that date is missing, omit " on {returned_date}" and write `was returned to us` with no `on` clause. The address lines are the order's current ship-to, copied exactly. Omit street2 when it is empty. Do not claim the address failed validation, and do not invent a carrier reason. Leave `reason_unknown` and any other unverified return reason out of the draft.
 
-Say the order was returned. Do not write `We have not shipped it again.` or `We haven't reshipped it.` Do not use `If that's right, reply and let us know. If it isn't, reply with the corrected address.`
+Say the order was returned. Do not write `We have not shipped it again.` or `We haven't reshipped it.` Do not use `If that's right, reply and let us know. If it isn't, reply with the corrected address.` Do not use `so we can work out the next steps.` The closing line promises another shipment in the email. Saving the draft does not create that shipment.
 
 ### Voice
 
@@ -216,7 +243,7 @@ No language guide named Thor is in this repo or in hello@runeastpeak.com. Write 
 
 - First name, contractions, and short sentences.
 - Name the order and the return date when that date is known. Acknowledge the hassle. Do not say the package has not shipped again.
-- Ask them to confirm the address or send a correction.
-- Sign `Thanks for your help!` then `East Peak`. Do not sign as a teammate.
+- Ask them to confirm, and say we'll ship another out. If they send a correction, say we'll ship another out once we have it. Do not write `so we can work out the next steps.`
+- Sign `Best,` then `George`. Do not sign `East Peak`.
 
 A saved draft is waiting for a person to review it. It does not reship the order and it does not clear the alert.
