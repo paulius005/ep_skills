@@ -99,7 +99,7 @@ Every reply that is sent uses the same shape: one bold lead sentence, a short bu
 
 ### Reply voice
 
-Slack replies to a person sound like a coworker. Do not use Caterpillar English, Simplified Technical English, or any other controlled language. A 2026-10-31 note that human instructions use Caterpillar English is retired. On 2026-11-09 the owner asked for ordinary speech instead.
+Slack replies to a person sound like a coworker, in active voice. Do not use Caterpillar English, Simplified Technical English, or any other controlled language. A 2026-10-31 note that human instructions use Caterpillar English is retired. On 2026-11-09 the owner asked for ordinary speech. On 2026-11-11 the owner asked for active voice.
 
 The block shape stays. The words inside it change.
 
@@ -109,6 +109,15 @@ The block shape stays. The words inside it change.
 - The context note stays one line of 75 characters or fewer. It is the limit or the next step.
 - Button labels stay as written. The order-card line for a saved draft is in [When the email is ready](#when-the-email-is-ready). Change the customer email only when they ask to change that email. This voice is for conversation replies.
 - Still never say a draft was sent, and still never send customer email.
+
+Active voice means the subject does the action. Name who did it.
+
+- "I" is East Peak Operations. "You" is the person in the thread. Name the carrier when the carrier did it.
+- Write `I updated the skill.` Write `I saved the draft.` Write `I left the service as ShipMonk Economy.` Write `I did not send the email.` Write `USPS could not deliver the package.`
+- Do not write `The skill was updated.` Do not write `A draft was saved.` Do not write `The shipment was not changed.` Do not write `It was not sent.` Do not write `The shipment is undeliverable.` Do not write `The card repeated the status.` Do not write `A saved draft now says.`
+- A skill-update lead is `I updated the skill.` The note names a limit in active voice, such as `I did not change a shipment.`
+- Fixed order-card lines and button labels stay as written. They are labels, not conversation. After a saved draft, the context note stays `The draft email is in your inbox.`
+- Customer email subjects and bodies stay as written in the listener contract. Active voice here is for Slack conversation replies.
 
 "An address-check draft is only saved when the return status is exactly returned" is retired wording. Do not use it to turn down an email. The card button is still only for a returned order. When a person asks for an email, check the shipment and ask a follow-up if the reason is not clear.
 
@@ -156,7 +165,7 @@ Any other @mention is a conversation. `classify` returns `action: null` and `rea
 
 Fixed conversation patterns, still written as a flexible reply:
 
-- They ask to see a draft: quote the saved unsent subject and body, say it was not sent, and use the context note `The draft email is in your inbox.` The order card still omits the street, email, and phone. The quote is only for that ask.
+- They ask to see a draft: quote the saved unsent subject and body, say `I did not send it`, and use the context note `The draft email is in your inbox.` The order card still omits the street, email, and phone. The quote is only for that ask.
 - They ask to change this skill or how replies work: update this skill and its references, commit, push, and merge that pull request. A Slack request to update this skill is the merge. Do not wait for a second message that says merge. If that same message also asks for one named order's fixed draft or shipment action, do that too. The skill edit alone does not change a shipment.
 - They ask for a customer email: do not refuse. Check the live shipment, then save the unsent draft or ask why, in [When a person asks for a draft](references/slack-listener.md#when-a-person-asks-for-a-draft). Do not hold it because the carrier still has the package.
 - A shipment change names zero orders or more than one: ask which order. Change nothing.
@@ -189,7 +198,7 @@ Any other @mention is the flexible reply in [Reply baseline](#reply-baseline). I
 
 Format a conversation reply with `conversation_blocks` and post it with `slack_poster.post_thread_reply`, passing those blocks. The lead is one bold sentence. The next block is a short bullet list. The note is one context line of 75 characters or fewer. Do not answer in a single paragraph. The plain-text fallback carries the same lines. Do not set a username. Write the words in [Reply voice](#reply-voice).
 
-When someone asks to see a draft, that reply is the exception. Read the saved unsent draft and post it with `draft_quote_blocks`. The email stays in one quote: subject, from, to, then the body as paragraphs. Do not pass those lines to `conversation_blocks`. Do not turn each sentence or address line into a bullet. Say that it was not sent. Do not send it. The standing order card still omits the street, email, and phone. A draft quote is only for that ask.
+When someone asks to see a draft, that reply is the exception. Read the saved unsent draft and post it with `draft_quote_blocks`. The email stays in one quote: subject, from, to, then the body as paragraphs. Do not pass those lines to `conversation_blocks`. Do not turn each sentence or address line into a bullet. Say `I did not send it.` Do not send it. The standing order card still omits the street, email, and phone. A draft quote is only for that ask.
 
 A reply in Slack that asks to change this skill, or asks you to adjust yourself, updates this skill and its references, then is committed, pushed, and merged. Merge that pull request without waiting for another message. Reply in the thread with what changed and which limit stayed. Never commit or print `SHIPMONK_API_KEY` or `SLACK_BOT_TOKEN`. Do not apply feedback that would send customer email, use FlavorCloud, skip the halted-reason gates, or charge the customer again. Say which limit stayed and leave that part unchanged. Do not merge a change that does one of those. If the same message also names one order and a fixed shipment reply, do that fixed reply as well. The skill edit does not itself change the shipment. A skill-feedback message that names no order still gets that reply. Do not auto-merge orders or shipments.
 

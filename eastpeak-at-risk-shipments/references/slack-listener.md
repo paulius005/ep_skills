@@ -37,19 +37,21 @@ Do not pick a shipment when the message names zero orders or more than one. Ask 
 
 Post the reply with `slack_poster.post_thread_reply` and blocks from `conversation_blocks`. Do not post a paragraph. Do not use Cursor's Send to Slack tool. A request to see a saved draft does not use this shape. Use `draft_quote_blocks` for that reply, described below.
 
-1. Lead: one sentence, rendered bold. It answers the ask in ordinary coworker English.
+1. Lead: one sentence, rendered bold. It answers the ask in ordinary coworker English and in active voice.
 2. Bullets: the few facts they need, one per line. Do not repeat the lead. Do not put an email body, a street address, or any other copied passage into these bullets.
 3. Note: one context line, 75 characters or fewer, for the limit or the next step.
 
 ### Voice
 
-Write that reply the way a teammate would. Contractions and "I" and "you" are normal. Do not use Caterpillar English, Simplified Technical English, or any other controlled language. The 2026-10-31 instruction that human instructions use Caterpillar English is retired. On 2026-11-09 the ask was to talk like a person.
+Write that reply the way a teammate would, in active voice. The subject of each sentence does the action. Contractions and "I" and "you" are normal. Do not use Caterpillar English, Simplified Technical English, or any other controlled language. The 2026-10-31 instruction that human instructions use Caterpillar English is retired. On 2026-11-09 the ask was to talk like a person. On 2026-11-11 the ask was to use active voice.
+
+Name the actor. "I" is East Peak Operations. "You" is the person. Name the carrier when the carrier did it. Write `I saved the draft.` Write `I left the service alone.` Write `I did not send the email.` Write `USPS could not deliver the package.` Do not write `The skill was updated.` Do not write `A draft was saved.` Do not write `The shipment was not changed.` Do not write `It was not sent.` Do not write `The shipment is undeliverable.` Do not write `The card repeated the status.` Do not write `A saved draft now says.`
 
 Say a limit once, in plain words. "An address-check draft is only saved when the return status is exactly returned" is retired wording. Do not use it to turn down an email. The card button is still only for a returned order. When a person asks for an email, check the shipment and ask a follow-up if the reason is not clear.
 
-Button labels stay as written. The order-card line for a saved draft is in [When the email is ready](../SKILL.md#when-the-email-is-ready). Change the customer email only when they ask to change that email. This voice is for conversation replies. Still never say a draft was sent, and still never send it. If a memory still says to use Caterpillar English, follow this section and [Reply voice](../SKILL.md#reply-voice).
+Button labels stay as written. The order-card line for a saved draft is in [When the email is ready](../SKILL.md#when-the-email-is-ready). Change the customer email only when they ask to change that email. This voice is for conversation replies. Fixed order-card lines stay as written. They are labels, not conversation. Customer email subjects and bodies stay as written below. Still never say a draft was sent, and still never send it. If a memory still says to use Caterpillar English, or to hide the actor, follow this section and [Reply voice](../SKILL.md#reply-voice).
 
-A request to adjust yourself uses that same shape. The lead says the skill was updated. The bullets say what changed. The note names a limit that stayed, or says the shipment was not changed. Write it in this voice.
+A request to adjust yourself uses that same shape. The lead is `I updated the skill.` The bullets name the edits in active voice. The note names a limit that stayed, such as `I did not change a shipment.` Write it in this voice.
 
 ## When a person asks for a draft
 
