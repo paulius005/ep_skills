@@ -8,6 +8,7 @@ Address before/after is a separate section. Email and phone are never rendered.
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from zoneinfo import ZoneInfo
@@ -24,6 +25,12 @@ EN_ROUTE_UNCHANGED = "Service unchanged — shipment already en route."
 EMAIL_READY = "The email is ready."
 EMAIL_READY_EN_ROUTE = (
     "The email is ready. Service unchanged — shipment already en route."
+)
+UNDELIVERABLE_WAITING = "We already emailed them. Waiting on a reply."
+UNDELIVERABLE_NEXT = "Ask them to confirm the address."
+_STATUS_ECHO = re.compile(
+    r"service unchanged.{0,80}undeliverable|the shipment is undeliverable",
+    re.IGNORECASE,
 )
 SECTION_MAX = 3000
 BUTTON_VALUE_MAX = 2000
@@ -43,6 +50,7 @@ ROUTE_STAGE = {
     "awaiting_carrier_processing": "Awaiting carrier",
     "pick_in_progress": "Picking",
     "picked": "Picked",
+    "undeliverable": "Undeliverable",
 }
 
 NOT_EDITABLE_PROCESSING = {"en_route", "packed"}
@@ -167,6 +175,7 @@ class Shipment:
     street1: str | None = None
     street2: str | None = None
     draft_saved: bool = False
+    customer_contacted: bool = False
     service_changed: bool = False
     cloned: bool = False
     replacement_pending_resolve: bool = False
@@ -423,15 +432,22 @@ def _service_left_because_en_route(shipment: Shipment) -> bool:
     return shipment.processing_status == "en_route" and not shipment.service_changed
 
 
+def _status_echo(text: str | None) -> bool:
+    """True when a context line only restates that an undeliverable service stayed."""
+    return bool(text and _STATUS_ECHO.search(text))
+
+
 def context_line(shipment: Shipment) -> str:
     if shipment.daily_cloned and shipment.return_status != "returned":
         line = DAILY_CLONED_READOUT
     elif shipment.replacement_pending_resolve and shipment.return_status != "returned":
         line = CLONED_RESOLVE_ACTION
-    elif shipment.context:
+    elif shipment.context and not _status_echo(shipment.context):
         line = shipment.context
     elif shipment.cloned:
         line = "Order has been cloned. Please Resolve At Risk"
+    elif shipment.processing_status == "undeliverable" and shipment.customer_contacted:
+        line = UNDELIVERABLE_WAITING
     elif (
         shipment.draft_saved
         and shipment.return_status != "returned"
@@ -446,6 +462,8 @@ def context_line(shipment: Shipment) -> str:
         line = "Address 2 exceeded limit of 50 characters."
     elif _service_left_because_en_route(shipment):
         line = EN_ROUTE_UNCHANGED
+    elif shipment.processing_status == "undeliverable":
+        line = UNDELIVERABLE_NEXT
     elif show_usps_button(shipment):
         place = state_name(shipment.state)
         line = f"Choose USPS Priority for {place}."
@@ -695,6 +713,7 @@ def shipment_from_dict(data: dict) -> Shipment:
         street1=data.get("street1"),
         street2=data.get("street2"),
         draft_saved=bool(data.get("draft_saved", False)),
+        customer_contacted=bool(data.get("customer_contacted", False)),
         service_changed=bool(data.get("service_changed", False)),
         cloned=bool(data.get("cloned", False)),
         replacement_pending_resolve=bool(data.get("replacement_pending_resolve", False)),

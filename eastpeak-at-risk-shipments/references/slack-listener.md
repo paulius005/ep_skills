@@ -199,6 +199,8 @@ On `draft_address_check` only:
 
 The daily report also drafts without a button click. For an in-transit order whose service stays unchanged, follow [When the email is ready](../SKILL.md#when-the-email-is-ready). That draft's subject is `Can you confirm the address for your East Peak order #{order_number}?`. It is based on the verified shipment, signed `Best,` then `George`, and it is not sent. A matching draft that already exists is reused. A message that was already sent stops a new draft.
 
+For `processing_status` `undeliverable`, search the same mailbox for the order and the customer before the card is written. Follow [When the shipment is undeliverable](../SKILL.md#when-the-shipment-is-undeliverable). The context line is the next step: `We already emailed them. Waiting on a reply.` when a matching message was sent, `The email is ready.` when an unsent draft was read back, or `Ask them to confirm the address.` when neither exists. Do not write `Service unchanged. The shipment is undeliverable.` Do not send the draft.
+
 Guidelines for every returned-to-sender draft. Adapt the template to the order. Do not send it.
 
 - Use a properly capitalized, descriptive subject.

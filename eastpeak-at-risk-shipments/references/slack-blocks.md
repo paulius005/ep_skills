@@ -88,6 +88,8 @@ Order `#8274` uses the same hierarchy with `In transit → California`, `ShipMon
 
 When that in-transit order has an unsent draft, set `draft_saved`. The context line changes to `The email is ready. Service unchanged — shipment already en route.` The service line stays. The parent summary adds `The customer email is ready.` when one order has a draft, and `{n} customer emails are ready.` when more than one does. The email was not sent. A returned order with a saved draft uses `The email is ready.` and does not use the service-unchanged sentence. See [When the email is ready](../SKILL.md#when-the-email-is-ready).
 
+`processing_status` `undeliverable` uses route `Undeliverable → {State}` and a next-step context line. Search `hello@runeastpeak.com` for that order and that customer before writing the card. A sent message sets `customer_contacted` and the line is `We already emailed them. Waiting on a reply.` A read-back unsent draft sets `draft_saved` and the line is `The email is ready.` No draft and no sent message uses `Ask them to confirm the address.` Conflicting or missing recipient addresses use `Ask which email to use before writing them.` Do not write `Service unchanged. The shipment is undeliverable.` The poster drops that sentence when it is passed as `context`. See [When the shipment is undeliverable](../SKILL.md#when-the-shipment-is-undeliverable).
+
 `Service` is `Not set (requested Standard)` when ShipMonk has not resolved a method. The route uses `In transit` for `en_route` and the full state name.
 
 ## Address section
