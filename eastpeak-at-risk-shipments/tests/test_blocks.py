@@ -15,6 +15,9 @@ from slack_poster.blocks import (  # noqa: E402
     EMAIL_READY,
     EMAIL_READY_EN_ROUTE,
     EN_ROUTE_UNCHANGED,
+    MAIL_ASK_ADDRESS,
+    MAIL_IN_DRAFT,
+    MAIL_SENT_WAITING,
     Report,
     Shipment,
     apply_daily_clone_check,
@@ -133,7 +136,6 @@ class LayoutTests(unittest.TestCase):
         self.assertIn("18927830040707", first.blocks[2]["text"]["text"])
         self.assertEqual(first.blocks[3]["elements"][0]["text"], "Store 19002 · Fulfilled")
         self.assertNotIn("actions", [block["type"] for block in first.blocks])
-
         other = second.blocks[0]["text"]["text"]
         self.assertIn("*Order #8274*  `At risk`", other)
         self.assertIn("*In transit → California*", other)
@@ -143,6 +145,66 @@ class LayoutTests(unittest.TestCase):
             "Service unchanged — shipment already en route.",
         )
         self.assertEqual(second.blocks[3]["elements"][0]["text"], "Store 19002 · Fulfilled")
+
+    def test_undeliverable_card_says_draft_or_sent_and_skips_the_field_list(self):
+        draft = shipment(
+            order_number="8391",
+            order_key="18987724439683",
+            processing_status="undeliverable",
+            state="UT",
+            service="ShipMonk Economy",
+            draft_saved=True,
+            customer_mail="draft",
+        )
+        self.assertEqual(MAIL_IN_DRAFT, "The email is in draft. It was not sent.")
+        self.assertEqual(MAIL_SENT_WAITING, "We already emailed them. Waiting on a reply.")
+        self.assertEqual(MAIL_ASK_ADDRESS, "Ask them to confirm the address.")
+        self.assertLessEqual(len(MAIL_IN_DRAFT), 75)
+        self.assertLessEqual(len(MAIL_SENT_WAITING), 75)
+        self.assertLessEqual(len(MAIL_ASK_ADDRESS), 75)
+        blocks = order_blocks(draft)
+        body = blocks[0]["text"]["text"]
+        self.assertEqual(
+            [block["type"] for block in blocks],
+            ["section", "context", "section", "context"],
+        )
+        self.assertIn("*Order #8391*  `At risk`", body)
+        self.assertIn("*Undeliverable → Utah*", body)
+        self.assertIn("ShipMonk Economy", body)
+        self.assertEqual(blocks[1]["elements"][0]["text"], MAIL_IN_DRAFT)
+        self.assertIn("View order in ShipMonk ↗", blocks[2]["text"]["text"])
+        self.assertEqual(blocks[3]["elements"][0]["text"], "Store 19002 · Fulfilled")
+        rendered = joined(blocks)
+        for retired in (
+            "Store id:",
+            "Order status:",
+            "Processing status:",
+            "Actions required:",
+            "Destination state:",
+            "Shipping service:",
+        ):
+            self.assertNotIn(retired, rendered)
+        sent = shipment(
+            order_number="8391",
+            order_key="18987724439683",
+            processing_status="undeliverable",
+            state="UT",
+            service="ShipMonk Economy",
+            draft_saved=True,
+            customer_mail="sent",
+        )
+        self.assertEqual(context_line(sent), MAIL_SENT_WAITING)
+        missing = shipment(
+            order_number="8391",
+            order_key="18987724439683",
+            processing_status="undeliverable",
+            state="UT",
+            service="ShipMonk Economy",
+            customer_mail="none",
+        )
+        self.assertEqual(context_line(missing), MAIL_ASK_ADDRESS)
+        with self.assertRaises(ValueError):
+            shipment(customer_mail="maybe")
 
     def test_cloned_order_asks_a_person_to_resolve_at_risk(self):
         shipment = Shipment(

@@ -25,6 +25,18 @@ EMAIL_READY = "The email is ready."
 EMAIL_READY_EN_ROUTE = (
     "The email is ready. Service unchanged — shipment already en route."
 )
+MAIL_SENT_WAITING = "We already emailed them. Waiting on a reply."
+MAIL_IN_DRAFT = "The email is in draft. It was not sent."
+MAIL_ASK_ADDRESS = "Ask them to confirm the address."
+CUSTOMER_MAIL_STATES = {"sent", "draft", "none"}
+FIELD_LIST_LABELS = (
+    "Store id:",
+    "Order status:",
+    "Processing status:",
+    "Actions required:",
+    "Destination state:",
+    "Shipping service:",
+)
 SECTION_MAX = 3000
 BUTTON_VALUE_MAX = 2000
 PACIFIC = ZoneInfo("America/Los_Angeles")
@@ -36,6 +48,7 @@ MONTHS = (
 
 ROUTE_STAGE = {
     "en_route": "In transit",
+    "undeliverable": "Undeliverable",
     "packed": "Packed",
     "unable_to_submit": "Unable to submit",
     "queued_to_submit": "Queued to submit",
@@ -167,6 +180,7 @@ class Shipment:
     street1: str | None = None
     street2: str | None = None
     draft_saved: bool = False
+    customer_mail: str | None = None
     service_changed: bool = False
     cloned: bool = False
     replacement_pending_resolve: bool = False
@@ -179,6 +193,8 @@ class Shipment:
         if self.store_id not in ALLOWED_STORES:
             raise ValueError(f"store_id must be one of {sorted(ALLOWED_STORES)}")
         self.flags = list(self.flags or [])
+        if self.customer_mail not in CUSTOMER_MAIL_STATES and self.customer_mail is not None:
+            raise ValueError("customer_mail must be sent, draft, or none")
 
 
 @dataclass
@@ -432,14 +448,30 @@ def context_line(shipment: Shipment) -> str:
         line = shipment.context
     elif shipment.cloned:
         line = "Order has been cloned. Please Resolve At Risk"
+    elif shipment.customer_mail == "sent":
+        line = MAIL_SENT_WAITING
     elif (
-        shipment.draft_saved
+        (shipment.draft_saved or shipment.customer_mail == "draft")
         and shipment.return_status != "returned"
         and _service_left_because_en_route(shipment)
     ):
         line = EMAIL_READY_EN_ROUTE
+    elif (
+        shipment.processing_status == "undeliverable"
+        and shipment.return_status != "returned"
+        and (shipment.customer_mail == "draft" or shipment.draft_saved)
+    ):
+        line = MAIL_IN_DRAFT
+    elif shipment.customer_mail == "draft":
+        line = MAIL_IN_DRAFT
     elif shipment.draft_saved:
         line = EMAIL_READY
+    elif (
+        shipment.customer_mail == "none"
+        and shipment.processing_status == "undeliverable"
+        and shipment.return_status != "returned"
+    ):
+        line = MAIL_ASK_ADDRESS
     elif shipment.return_status == "returned":
         line = "Draft an email to the customer."
     elif address_over_limit(shipment):
@@ -574,9 +606,19 @@ def parent_fallback(report: Report, permalink: str | None = None) -> str:
     return "\n".join(lines)
 
 
+def _reject_field_list(text: str) -> str:
+    """The route line replaced the retired Store id / Processing status list."""
+    for label in FIELD_LIST_LABELS:
+        if label in text:
+            raise ValueError("order card must not use a field list")
+    return text
+
+
 def order_blocks(shipment: Shipment) -> list[dict]:
     title = f"*Order #{shipment.order_number}*  {flag_chips(shipment.flags)}"
-    body = f"{title}\n*{route_line(shipment)}*\n{service_line(shipment)}"
+    body = _reject_field_list(
+        f"{title}\n*{route_line(shipment)}*\n{service_line(shipment)}"
+    )
     link = f"<{order_url(shipment)}|View order in ShipMonk ↗>"
     blocks = [
         _section(_scrub(body, shipment)),
@@ -605,7 +647,7 @@ def order_fallback(shipment: Shipment) -> str:
         f"View order in ShipMonk: {order_url(shipment)}",
         footer_line(shipment),
     ]
-    return _scrub("\n".join(line for line in lines if line), shipment)
+    return _reject_field_list(_scrub("\n".join(line for line in lines if line), shipment))
 
 
 def address_section_text(shipment: Shipment) -> str | None:
@@ -695,6 +737,7 @@ def shipment_from_dict(data: dict) -> Shipment:
         street1=data.get("street1"),
         street2=data.get("street2"),
         draft_saved=bool(data.get("draft_saved", False)),
+        customer_mail=data.get("customer_mail"),
         service_changed=bool(data.get("service_changed", False)),
         cloned=bool(data.get("cloned", False)),
         replacement_pending_resolve=bool(data.get("replacement_pending_resolve", False)),

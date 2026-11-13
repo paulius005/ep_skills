@@ -153,6 +153,40 @@ def post_report(report: Report, *, transport=None, token: str | None = None, dry
     }
 
 
+def update_message(
+    *,
+    channel_id: str,
+    ts: str,
+    text: str,
+    blocks: list,
+    transport=None,
+    token: str | None = None,
+) -> dict:
+    """Replace one channel message with chat.update. No username override.
+
+    Use this to correct an order card already posted today. The token stays
+    on the Authorization header.
+    """
+    if channel_id != CHANNEL_ID:
+        raise RuntimeError("wrong channel")
+    if not ts:
+        raise RuntimeError("ts is required")
+    if transport is None:
+        secret = token if token is not None else os.environ.get(TOKEN_ENV)
+        if not secret:
+            raise RuntimeError(f"{TOKEN_ENV} is not set")
+        transport = UrllibSlackTransport(secret)
+    body = {
+        "channel": channel_id,
+        "ts": ts,
+        "text": text,
+        "blocks": blocks,
+        "unfurl_links": False,
+        "unfurl_media": False,
+    }
+    return transport("chat.update", body)
+
+
 def post_reply(
     thread_ts: str,
     text: str,

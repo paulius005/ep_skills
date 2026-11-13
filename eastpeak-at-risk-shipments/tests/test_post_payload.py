@@ -22,6 +22,7 @@ from slack_poster.post import (  # noqa: E402
     post_reply,
     post_report,
     post_thread_reply,
+    update_message,
 )
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
@@ -299,6 +300,31 @@ class PayloadTests(unittest.TestCase):
                 thread_ts="1700000000.000100",
                 text="No.",
                 blocks=blocks,
+                transport=transport,
+            )
+
+    def test_update_message_uses_chat_update_and_sets_no_username(self):
+        transport = RecordingTransport()
+        result = update_message(
+            channel_id="C0CCJJGG6HK",
+            ts="1794586231.896209",
+            text="Order #8391\nUndeliverable → Utah",
+            blocks=[{"type": "section", "text": {"type": "mrkdwn", "text": "Order #8391"}}],
+            transport=transport,
+        )
+        self.assertTrue(result["ok"])
+        method, body = transport.calls[0]
+        self.assertEqual(method, "chat.update")
+        self.assertEqual(body["channel"], "C0CCJJGG6HK")
+        self.assertEqual(body["ts"], "1794586231.896209")
+        self.assertNotIn("username", body)
+        self.assertNotIn("thread_ts", body)
+        with self.assertRaises(RuntimeError):
+            update_message(
+                channel_id="C0OTHER",
+                ts="1794586231.896209",
+                text="No.",
+                blocks=[],
                 transport=transport,
             )
 
