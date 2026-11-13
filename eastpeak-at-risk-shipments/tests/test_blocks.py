@@ -25,6 +25,7 @@ from slack_poster.blocks import (  # noqa: E402
     address_section_text,
     context_line,
     conversation_blocks,
+    route_line,
     conversation_fallback,
     format_header_date,
     order_blocks,
@@ -289,6 +290,76 @@ class LayoutTests(unittest.TestCase):
                 "Shipping services were left unchanged.",
             ],
         )
+
+    def test_undeliverable_card_says_the_next_step(self):
+        order = shipment(
+            order_number="8391",
+            order_key="18987724439683",
+            processing_status="undeliverable",
+            state="UT",
+            service="ShipMonk Economy",
+            context="Service unchanged. The shipment is undeliverable.",
+        )
+        self.assertEqual(route_line(order), "Undeliverable → Utah")
+        self.assertEqual(context_line(order), "Ask them to confirm the address.")
+        self.assertLessEqual(len(context_line(order)), 75)
+        rendered = joined(order_blocks(order))
+        self.assertIn("Ask them to confirm the address.", rendered)
+        self.assertNotIn("Service unchanged. The shipment is undeliverable.", rendered)
+        self.assertNotIn("the shipment is undeliverable", rendered.lower())
+
+        contacted = shipment(
+            order_number="8391",
+            order_key="18987724439683",
+            processing_status="undeliverable",
+            state="UT",
+            service="ShipMonk Economy",
+            customer_contacted=True,
+            context="Service unchanged, the shipment is undeliverable",
+        )
+        self.assertEqual(
+            context_line(contacted),
+            "We already emailed them. Waiting on a reply.",
+        )
+        self.assertLessEqual(len(context_line(contacted)), 75)
+
+        ready = shipment(
+            order_number="8391",
+            order_key="18987724439683",
+            processing_status="undeliverable",
+            state="UT",
+            service="ShipMonk Economy",
+            draft_saved=True,
+            context="Service unchanged. The shipment is undeliverable.",
+        )
+        self.assertEqual(context_line(ready), "The email is ready.")
+        self.assertNotIn("Service unchanged", context_line(ready))
+
+        still_en_route = shipment(
+            customer_contacted=True,
+            context="Service unchanged. The shipment is undeliverable.",
+        )
+        self.assertEqual(context_line(still_en_route), EN_ROUTE_UNCHANGED)
+
+        returned = shipment(
+            order_number="8391",
+            order_key="18987724439683",
+            processing_status="undeliverable",
+            state="UT",
+            service="ShipMonk Economy",
+            return_status="returned",
+            rma="712-884-506",
+        )
+        self.assertEqual(context_line(returned), "Draft an email to the customer.")
+        cloned = shipment(
+            order_number="8391",
+            order_key="18987724439683",
+            processing_status="undeliverable",
+            state="UT",
+            daily_cloned=True,
+            customer_contacted=True,
+        )
+        self.assertEqual(context_line(cloned), "Order has been cloned.")
 
     def test_context_elements_stay_within_slack_limit(self):
         for name in ("in_transit.json", "address_and_returned.json"):
