@@ -254,6 +254,23 @@ class ListenerTests(unittest.TestCase):
         self.assertIsNone(blank["action"])
         self.assertEqual(blank["reason"], "not_an_action")
 
+    def test_sent_or_draft_question_is_a_conversation(self):
+        ask = human_reply(
+            f"<@{BOT_USER}> has an email been sent or is in draft with the customer?"
+        )
+        decision = classify(ask, bot_user_id=BOT_USER)
+        self.assertEqual(decision["action"], "conversation")
+        self.assertEqual(decision["reason"], "conversation")
+        result = listen(ask, bot_user_id=BOT_USER, post=False)
+        self.assertFalse(result["posted"])
+        root = Path(__file__).resolve().parents[1]
+        skill = (root / "SKILL.md").read_text(encoding="utf-8")
+        listener = (root / "references" / "slack-listener.md").read_text(encoding="utf-8")
+        for text in (skill, listener):
+            self.assertIn("The email is in draft. It was not sent.", text)
+            self.assertIn("We already emailed them. Waiting on a reply.", text)
+            self.assertIn("Do not post a field list.", text)
+
     def test_a_skill_change_about_drafts_is_a_conversation(self):
         ask = human_reply(
             f"<@{BOT_USER}> Please adjust your skill so you don't refuse a reply. "

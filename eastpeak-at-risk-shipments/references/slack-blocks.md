@@ -86,6 +86,14 @@ In transit, with no built-in action, the card has no `actions` block. `View orde
 
 Order `#8274` uses the same hierarchy with `In transit → California`, `ShipMonk Standard`, and the same context and footer.
 
+Do not post a field list. `Store id:`, `Order status:`, `Processing status:`, `Actions required:`, `Destination state:`, and `Shipping service:` are retired. The route line carries the stage and the state. An undeliverable order is `*Undeliverable → Utah*` with the service on the next line, then one context line:
+
+- A matching message was already sent: `We already emailed them. Waiting on a reply.` Set `customer_mail` to `sent`.
+- An unsent draft and nothing sent: `The email is in draft. It was not sent.` Set `customer_mail` to `draft`.
+- Neither: `Ask them to confirm the address.` Set `customer_mail` to `none`.
+
+`customer_mail` is `sent`, `draft`, or `none`. A sent message wins over a leftover draft flag. The link still ends with `↗`, and the footer is still `Store {store id} · {Status}`. If a card already posted today uses the field list, `chat.update` that message. Do not post a second card.
+
 When that in-transit order has an unsent draft, set `draft_saved`. The context line changes to `The email is ready. Service unchanged — shipment already en route.` The service line stays. The parent summary adds `The customer email is ready.` when one order has a draft, and `{n} customer emails are ready.` when more than one does. The email was not sent. A returned order with a saved draft uses `The email is ready.` and does not use the service-unchanged sentence. See [When the email is ready](../SKILL.md#when-the-email-is-ready).
 
 `Service` is `Not set (requested Standard)` when ShipMonk has not resolved a method. The route uses `In transit` for `en_route` and the full state name.

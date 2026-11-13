@@ -51,6 +51,20 @@ Button labels stay as written. The order-card line for a saved draft is in [When
 
 A request to adjust yourself uses that same shape. The lead says the skill was updated. The bullets say what changed. The note names a limit that stayed, or says the shipment was not changed. Write it in this voice.
 
+## Sent or still a draft
+
+When a person asks whether the customer email was sent or is still a draft, answer from `hello@runeastpeak.com`. This is a conversation. It does not send mail and it does not change the shipment.
+
+Search that one order. A sent message and an unsent draft are different.
+
+- Sent: say it was sent. Name the subject. Note: `Waiting on a reply.` Do not start another draft.
+- Unsent draft, nothing sent: say it is in draft and was not sent. Name the subject and the day it was saved. Note: `The draft email is in your inbox.`
+- Neither: say there is no sent email and no draft. Note: `No customer email yet.` Do not create a draft from the question.
+
+Use `conversation_blocks`. Do not quote the body unless they also asked to see the draft. Leave the customer's email, phone, and street out. Zero orders or more than one: ask which order.
+
+The order card uses the same fact. An undeliverable card says `We already emailed them. Waiting on a reply.`, `The email is in draft. It was not sent.`, or `Ask them to confirm the address.` Do not post a field list. These labels are retired: `Store id:`, `Order status:`, `Processing status:`, `Actions required:`, `Destination state:`, `Shipping service:`. The card is the bold order number and status tag, the bold route such as `Undeliverable → Utah`, the service name, one context line, the ShipMonk link, and `Store {id} · {Status}`. If today's card already uses that field list, update it in place with `slack_poster.update_message`. Do not post a second card.
+
 ## When a person asks for a draft
 
 On 2026-11-09 the owner said not to refuse when someone asks for a customer email. Do not answer that the carrier still has the package, so no draft was saved.
